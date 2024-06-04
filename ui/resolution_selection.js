@@ -165,7 +165,9 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
           () => this.onTrackSelected_(track));
 
       const span = shaka.util.Dom.createHTMLElement('span');
-      if (this.player.isAudioOnly() && track.bandwidth) {
+      if (track.displayName) {
+        span.textContent = track.displayName;
+      } else if (this.player.isAudioOnly() && track.bandwidth) {
         span.textContent = Math.round(track.bandwidth / 1000) + ' kbits/s';
       } else if (track.height && track.width) {
         span.textContent = this.getResolutionLabel_(track, tracks);

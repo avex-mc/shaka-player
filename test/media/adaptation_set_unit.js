@@ -184,6 +184,7 @@ describe('AdaptationSet', () => {
       primary: false,
       video: video,
       decodingInfos: [],
+      displayName: null,
     };
   }
 

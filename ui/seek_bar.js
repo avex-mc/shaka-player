@@ -604,7 +604,8 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     }
     this.thumbnailImage_.style.left = '-' + scale * thumbnail.positionX + 'px';
     this.thumbnailImage_.style.top = '-' + scale * thumbnail.positionY + 'px';
-    this.thumbnailImage_.style.transform = 'scale(' + scale + ')';
+    const tfscale = this.thumbnailImage_.naturalWidth / thumbnail.width;
+    this.thumbnailImage_.style.transform = 'scale(' + tfscale + ')';
     this.thumbnailImage_.style.transformOrigin = 'left top';
     // Update container height and top
     height = Math.floor(width * thumbnail.height / thumbnail.width);

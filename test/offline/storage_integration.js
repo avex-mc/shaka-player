@@ -1409,6 +1409,7 @@ filterDescribe('Storage', storageSupport, () => {
       originalTextId: null,
       originalImageId: null,
       accessibilityPurpose: null,
+      displayName: null,
     };
   }
 
@@ -1457,6 +1458,7 @@ filterDescribe('Storage', storageSupport, () => {
       originalTextId: id.toString(),
       originalImageId: null,
       accessibilityPurpose: null,
+      displayName: null,
     };
   }
 
