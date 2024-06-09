@@ -335,6 +335,7 @@ shaka.test.StreamingEngineUtil = class {
       disabledUntilTime: 0,
       primary: false,
       decodingInfos: [],
+      displayName: null,
     };
     let variant2;
 

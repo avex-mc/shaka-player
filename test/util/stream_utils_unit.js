@@ -1049,6 +1049,7 @@ describe('StreamUtils', () => {
       allowedByApplication: true,
       allowedByKeySystem: true,
       decodingInfos: [],
+      displayName: null,
     };
 
     it('returns false if variant is disabled', () => {

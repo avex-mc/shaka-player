@@ -259,7 +259,8 @@ shaka.extern.BufferedInfo;
  *   originalAudioId: ?string,
  *   originalTextId: ?string,
  *   originalImageId: ?string,
- *   originalLanguage: ?string
+ *   originalLanguage: ?string,
+ *   displayName: ?string
  * }}
  *
  * @description
@@ -371,6 +372,8 @@ shaka.extern.BufferedInfo;
  *   The original language of the track, if any, as it appeared in the original
  *   manifest.  This is the exact value provided in the manifest; for normalized
  *   value use <code>language</code> property.
+ * @property {?string} displayName
+ *   優先的に表示される画質表記。
  * @exportDoc
  */
 shaka.extern.Track;

@@ -265,7 +265,8 @@ shaka.extern.DrmInfo;
  *   bandwidth: number,
  *   allowedByApplication: boolean,
  *   allowedByKeySystem: boolean,
- *   decodingInfos: !Array.<MediaCapabilitiesDecodingInfo>
+ *   decodingInfos: !Array.<MediaCapabilitiesDecodingInfo>,
+ *   displayName: ?string
  * }}
  *
  * @description
@@ -310,6 +311,9 @@ shaka.extern.DrmInfo;
  *   <i>Defaults to [].</i><br>
  *   Set by StreamUtils to indicate the results from MediaCapabilities
  *   decodingInfo.
+ * @property {?string} displayName
+ *   <i>Defaults to null.</i> <br>
+ *   優先的に表示される画質表記。
  *
  * @exportDoc
  */
