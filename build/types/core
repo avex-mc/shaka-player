@@ -59,6 +59,7 @@
 +../../lib/cea/dummy_caption_decoder.js
 
 +../../lib/text/cue.js
++../../lib/text/cue_region.js
 +../../lib/text/simple_text_displayer.js
 +../../lib/text/stub_text_displayer.js
 +../../lib/text/text_engine.js
@@ -79,6 +80,7 @@
 +../../lib/util/delayed_tick.js
 +../../lib/util/destroyer.js
 +../../lib/util/dom_utils.js
++../../lib/util/drm_utils.js
 +../../lib/util/ebml_parser.js
 +../../lib/util/error.js
 +../../lib/util/event_manager.js

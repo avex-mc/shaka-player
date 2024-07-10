@@ -110,12 +110,42 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
       });
     }
 
-    // Sort the tracks by bandwidth.
-    tracks.sort((t1, t2) => {
-      goog.asserts.assert(t1.bandwidth != null, 'Null bandwidth');
-      goog.asserts.assert(t2.bandwidth != null, 'Null bandwidth');
-      return t2.bandwidth - t1.bandwidth;
+    // Remove duplicate entries with the same resolution or quality depending
+    // on content type.  Pick an arbitrary one.
+    tracks = tracks.filter((track, idx) => {
+      // Keep the first one with the same height and framerate or bandwidth.
+      let otherIdx = -1;
+      if (this.player.isAudioOnly()) {
+        otherIdx = tracks.findIndex((t) => t.bandwidth == track.bandwidth);
+      } else {
+        otherIdx = tracks.findIndex((t) => {
+          return t.height == track.height &&
+              t.videoBandwidth == track.videoBandwidth &&
+              t.frameRate == track.frameRate &&
+              t.hdr == track.hdr &&
+              t.videoLayout == track.videoLayout;
+        });
+      }
+      return otherIdx == idx;
     });
+
+    // Sort the tracks by height or bandwidth depending on content type.
+    if (this.player.isAudioOnly()) {
+      tracks.sort((t1, t2) => {
+        goog.asserts.assert(t1.bandwidth != null, 'Null bandwidth');
+        goog.asserts.assert(t2.bandwidth != null, 'Null bandwidth');
+        return t2.bandwidth - t1.bandwidth;
+      });
+    } else {
+      tracks.sort((t1, t2) => {
+        goog.asserts.assert(t1.height != null, 'Null height');
+        goog.asserts.assert(t2.height != null, 'Null height');
+        if (t2.height == t1.height) {
+          return t2.bandwidth - t1.bandwidth;
+        }
+        return t2.height - t1.height;
+      });
+    }
 
     // Remove old shaka-resolutions
     // 1. Save the back to menu button

@@ -117,7 +117,15 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
       return this.currentStats_[name] + ' (stalls)';
     };
 
-    const parseBytesDownloaded = (name) => {
+    const parseErrors = (name) => {
+      return this.currentStats_[name] + ' (errors)';
+    };
+
+    const parsePeriods = (name) => {
+      return this.currentStats_[name] + ' (periods)';
+    };
+
+    const parseBytes = (name) => {
       const bytes = parseInt(this.currentStats_[name], 10);
       if (bytes > 1e6) {
         return (bytes / 1e6).toFixed(2) + 'MB';
@@ -149,7 +157,11 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
       'droppedFrames': parseFrames,
       'stallsDetected': parseStalls,
       'gapsJumped': parseGaps,
-      'bytesDownloaded': parseBytesDownloaded,
+      'manifestSizeBytes': parseBytes,
+      'bytesDownloaded': parseBytes,
+      'nonFatalErrorCount': parseErrors,
+      'manifestPeriodCount': parsePeriods,
+      'manifestGapCount': parseGaps,
     };
 
     /** @private {shaka.util.Timer} */
@@ -229,8 +241,11 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
   loadContainer_() {
     for (const name of this.controls.getConfig().statisticsList) {
       if (name in this.currentStats_ && !this.skippedStats_.includes(name)) {
-        this.container_.appendChild(this.generateComponent_(name));
+        const element = this.generateComponent_(name);
+        this.container_.appendChild(element);
         this.statisticsList_.push(name);
+        shaka.ui.Utils.setDisplay(element.parentElement,
+            !isNaN(this.currentStats_[name]));
       } else {
         shaka.log.alwaysWarn('Unrecognized statistic element:', name);
       }
@@ -242,8 +257,12 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
     this.currentStats_ = this.player.getStats();
 
     for (const name of this.statisticsList_) {
-      this.displayedElements_[name].textContent =
-          this.parseFrom_[name](name);
+      const element = this.displayedElements_[name];
+      element.textContent = this.parseFrom_[name](name);
+      if (element && element.parentElement) {
+        shaka.ui.Utils.setDisplay(element.parentElement,
+            !isNaN(this.currentStats_[name]));
+      }
     }
   }
 

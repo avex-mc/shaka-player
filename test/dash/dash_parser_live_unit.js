@@ -38,6 +38,8 @@ describe('DashParser Live', () => {
       newDrmInfo: (stream) => {},
       onManifestUpdated: () => {},
       getBandwidthEstimate: () => 1e6,
+      onMetadata: () => {},
+      disableStream: (stream) => {},
     };
   });
 
@@ -413,6 +415,7 @@ describe('DashParser Live', () => {
     Date.now = () => 5;
 
     const manifest = await parser.start('dummy://foo', playerInterface);
+    expect(manifest.periodCount).toBe(1);
     const variant = manifest.variants[0];
     const stream = variant.video;
     await stream.createSegmentIndex();
@@ -426,6 +429,8 @@ describe('DashParser Live', () => {
     Date.now = () => 15;
 
     await updateManifest();
+
+    expect(manifest.periodCount).toBe(2);
 
     // The update should have affected the same variant object we captured
     // before.  Now the entire first period should exist (0-10s), plus the next
@@ -506,6 +511,7 @@ describe('DashParser Live', () => {
     Date.now = () => 5;
 
     const manifest = await parser.start('dummy://foo', playerInterface);
+    expect(manifest.periodCount).toBe(1);
     const variant = manifest.variants[0];
     const stream = variant.video;
     await stream.createSegmentIndex();
@@ -518,6 +524,8 @@ describe('DashParser Live', () => {
     Date.now = () => 25;
 
     await updateManifest();
+
+    expect(manifest.periodCount).toBe(2);
 
     // The update should have affected the same variant object we captured
     // before.  Now the entire first period should exist (0-40s), plus the next
