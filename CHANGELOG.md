@@ -1,5 +1,51 @@
 # Changelog
 
+## [4.10.7](https://github.com/shaka-project/shaka-player/compare/v4.10.6...v4.10.7) (2024-07-18)
+
+
+### Bug Fixes
+
+* Allow reference mimeType change in StreamingEngine ([#7061](https://github.com/shaka-project/shaka-player/issues/7061)) ([2fe4dcc](https://github.com/shaka-project/shaka-player/commit/2fe4dcc076079816dc8999354bffe05994ec1d33))
+* **DASH:** Prioritize highest bandwidth in PeriodCombiner ([#7045](https://github.com/shaka-project/shaka-player/issues/7045)) ([30cdd61](https://github.com/shaka-project/shaka-player/commit/30cdd612a5eeb2a2bdcffde5cc37314829e56bad))
+* Destroy correctly unused transmuxer ([#7059](https://github.com/shaka-project/shaka-player/issues/7059)) ([7641475](https://github.com/shaka-project/shaka-player/commit/76414755abe708419d5ff5828e1d506866004084))
+* Fix MSE polyfill for iOS ([#7049](https://github.com/shaka-project/shaka-player/issues/7049)) ([44dc9a9](https://github.com/shaka-project/shaka-player/commit/44dc9a96f91d274daec4fcb63577794ffa55cca3))
+* **HLS:** Remove init segment on formats without init segment ([#7060](https://github.com/shaka-project/shaka-player/issues/7060)) ([ee179ad](https://github.com/shaka-project/shaka-player/commit/ee179ad3d041c85c663682b9f34cf0a52c0f0535))
+* **Transmuxer:** Fix init segment between discontinuities ([#7042](https://github.com/shaka-project/shaka-player/issues/7042)) ([dd2a6d7](https://github.com/shaka-project/shaka-player/commit/dd2a6d7c1289b1315942abfe3956096e84e3c001))
+* **ttml:** Handle escaped special characters. ([#7047](https://github.com/shaka-project/shaka-player/issues/7047)) ([451a41e](https://github.com/shaka-project/shaka-player/commit/451a41e625c7665ec42d0b98a191bab45077e193)), closes [#7044](https://github.com/shaka-project/shaka-player/issues/7044)
+* **UI:** Fix resolution label when the stream has not resolution ([#7043](https://github.com/shaka-project/shaka-player/issues/7043)) ([9e468f4](https://github.com/shaka-project/shaka-player/commit/9e468f48d32b6b795b2c9fbe2242b9c6e794b820))
+
+## [4.10.6](https://github.com/shaka-project/shaka-player/compare/v4.10.5...v4.10.6) (2024-07-15)
+
+
+### Bug Fixes
+
+* **DASH:** Fix transitions from 'dynamic' to 'static' ([#7029](https://github.com/shaka-project/shaka-player/issues/7029)) ([a05ebaf](https://github.com/shaka-project/shaka-player/commit/a05ebaf14c8d6c2e3b2a6e0b99dbac6c052fb239))
+* **DASH:** Improve memory usage with live streams ([#7039](https://github.com/shaka-project/shaka-player/issues/7039)) ([c1480c7](https://github.com/shaka-project/shaka-player/commit/c1480c7614e1f60b662055a4971b30e15abde129))
+* **PeriodCombiner:** Use normalized codec to remove duplicates ([#7032](https://github.com/shaka-project/shaka-player/issues/7032)) ([3dec226](https://github.com/shaka-project/shaka-player/commit/3dec2267fcb1d70d19642e14b1a6012ea33106c0))
+
+## [4.10.5](https://github.com/shaka-project/shaka-player/compare/v4.10.4...v4.10.5) (2024-07-12)
+
+
+### Bug Fixes
+
+* **CEA:** Offset text CEA-608 that are out of viewport ([#7024](https://github.com/shaka-project/shaka-player/issues/7024)) ([8511e5a](https://github.com/shaka-project/shaka-player/commit/8511e5acd1a0180dc84a26eff7f8312511beb054))
+* **HLS:** A/V sync regression for HLS with different segment sizes ([#7015](https://github.com/shaka-project/shaka-player/issues/7015)) ([536c58d](https://github.com/shaka-project/shaka-player/commit/536c58d05be7d84f525b495009e7c06eab17470f))
+* **UI:** Show all resolutions when there are only one audio. ([#7017](https://github.com/shaka-project/shaka-player/issues/7017)) ([26f9511](https://github.com/shaka-project/shaka-player/commit/26f951163bb76526dec20edb5918439466811074))
+
+## [4.10.4](https://github.com/shaka-project/shaka-player/compare/v4.10.3...v4.10.4) (2024-07-10)
+
+
+### Bug Fixes
+
+* **Ads:** Fix mangled properties when using X-ASSET-LIST ([#7002](https://github.com/shaka-project/shaka-player/issues/7002)) ([e42fd3f](https://github.com/shaka-project/shaka-player/commit/e42fd3f23f703a7d91381534471d0f14e4754250))
+* Avoid reset iterator when seek into the buffer ([#7004](https://github.com/shaka-project/shaka-player/issues/7004)) ([7a1c3ea](https://github.com/shaka-project/shaka-player/commit/7a1c3eab91ddf450338adf05fab7b82746ea6f7f))
+* Disable seek retry cooldown on most platforms ([#7010](https://github.com/shaka-project/shaka-player/issues/7010)) ([072d21d](https://github.com/shaka-project/shaka-player/commit/072d21d7c59cb695724e70a1966f8693c02471df))
+* Fix bad warning when use selectAudioLanguage ([#6999](https://github.com/shaka-project/shaka-player/issues/6999)) ([7ff4dc9](https://github.com/shaka-project/shaka-player/commit/7ff4dc91d4f67a240be0161fb5f4c81ceaa15cee))
+* **HLS:** Fix filtering video/audio streams without bandwidth ([#7008](https://github.com/shaka-project/shaka-player/issues/7008)) ([529db5b](https://github.com/shaka-project/shaka-player/commit/529db5bfe95a768dc5dce29e6fffff37515c7424))
+* **HLS:** Fix load AES media playlist ([#7012](https://github.com/shaka-project/shaka-player/issues/7012)) ([bd1bd93](https://github.com/shaka-project/shaka-player/commit/bd1bd9302f8ae986f84aa6ea08d0d6062355a3fe))
+* **HLS:** Propagate bandwidth to stream in audio-only and video-only ([#7006](https://github.com/shaka-project/shaka-player/issues/7006)) ([bd30a23](https://github.com/shaka-project/shaka-player/commit/bd30a230fc992939166cd3587850a12cd0aec9c7))
+* **Prefetch:** Use the same references time for evict and prefetchSegmentsByTime ([#7003](https://github.com/shaka-project/shaka-player/issues/7003)) ([3c71c71](https://github.com/shaka-project/shaka-player/commit/3c71c71d512ff4459e02d801048b2cf1d2992143))
+
 ## [4.10.3](https://github.com/shaka-project/shaka-player/compare/v4.10.2...v4.10.3) (2024-07-08)
 
 
