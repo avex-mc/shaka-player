@@ -376,6 +376,15 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
 
     const selectedTrack = tracks.find((track) => track.active);
 
+    // Debug: Log all tracks before filtering
+    console.log('All video tracks before filtering:', tracks.map(t => ({
+      displayName: t.displayName,
+      height: t.height,
+      bandwidth: t.bandwidth,
+      frameRate: t.frameRate,
+      active: t.active,
+    })));
+
     tracks = tracks.filter((track, idx) => {
       // Keep the first one with the same height and framerate or bandwidth.
       const otherIdx = tracks.findIndex((t) => {
@@ -395,6 +404,15 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
       });
       return otherIdx == idx;
     });
+
+    // Debug: Log filtered tracks
+    console.log('Video tracks after filtering:', tracks.map(t => ({
+      displayName: t.displayName,
+      height: t.height,
+      bandwidth: t.bandwidth,
+      frameRate: t.frameRate,
+      active: t.active,
+    })));
 
     // Sort the tracks by height or bandwidth depending on content type.
     tracks.sort((t1, t2) => {
