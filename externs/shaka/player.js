@@ -64,6 +64,7 @@ shaka.extern.StateChange;
  *   width: number,
  *   height: number,
  *   streamBandwidth: number,
+ *   currentCodecs: string,
  *
  *   decodedFrames: number,
  *   droppedFrames: number,
@@ -111,6 +112,8 @@ shaka.extern.StateChange;
  * @property {number} streamBandwidth
  *   The bandwidth required for the current streams (total, in bit/sec).
  *   It takes into account the playbackrate. If nothing is loaded, NaN.
+ * @property {string} currentCodecs
+ *   The current codec of the current streams.
  *
  * @property {number} decodedFrames
  *   The total number of frames decoded by the Player. If not reported by the
@@ -287,8 +290,7 @@ shaka.extern.BufferedInfo;
  * @description
  * An object describing a media track.  This object should be treated as
  * read-only as changing any values does not have any effect.  This is the
- * public view of an audio/video paring (variant type) or text track (text
- * type) or image track (image type).
+ * public view of an audio/video paring (variant type).
  *
  * @property {number} id
  *   The unique ID of the track.
@@ -462,6 +464,171 @@ shaka.extern.Track;
  * @exportDoc
  */
 shaka.extern.AudioTrack;
+
+
+/**
+ * @typedef {{
+ *   id: number,
+ *   active: boolean,
+ *   type: string,
+ *   bandwidth: number,
+ *   language: string,
+ *   label: ?string,
+ *   kind: ?string,
+ *   mimeType: ?string,
+ *   codecs: ?string,
+ *   primary: boolean,
+ *   roles: !Array<string>,
+ *   accessibilityPurpose: ?shaka.media.ManifestParser.AccessibilityPurpose,
+ *   forced: boolean,
+ *   originalTextId: ?string,
+ *   originalLanguage: ?string
+ * }}
+ *
+ * @description
+ * An object describing a text track.  This object should be treated as
+ * read-only as changing any values does not have any effect.
+ *
+ * @property {number} id
+ *   The unique ID of the track.
+ * @property {boolean} active
+ *   If true, this is the track being streamed (another track may be
+ *   visible in the buffer).
+ * @property {string} type
+ *   The type of track, either <code>'variant'</code> or <code>'text'</code>
+ *   or <code>'image'</code>.
+ * @property {number} bandwidth
+ *   The bandwidth required to play the track, in bits/sec.
+ * @property {string} language
+ *   The language of the track, or <code>'und'</code> if not given.  This value
+ *   is normalized as follows - language part is always lowercase and translated
+ *   to ISO-639-1 when possible, locale part is always uppercase,
+ *   i.e. <code>'en-US'</code>.
+ * @property {?string} label
+ *   The track label, which is unique text that should describe the track.
+ * @property {?string} kind
+ *   The kind of text track, either <code>'caption'</code> or
+ *  <code>'subtitle'</code>.
+ * @property {?string} mimeType
+ *   The MIME type of the content provided in the manifest.
+ * @property {?string} codecs
+ *   The codecs string provided in the manifest, if present.
+ * @property {boolean} primary
+ *   True indicates that this in the primary language for the content.
+ *   This flag is based on signals from the manifest.
+ *   This can be a useful hint about which language should be the default, and
+ *   indicates which track Shaka will use when the user's language preference
+ *   cannot be satisfied.
+ * @property {!Array<string>} roles
+ *   The roles of the track, e.g. <code>'main'</code>, <code>'caption'</code>,
+ *   or <code>'commentary'</code>.
+ * @property {?shaka.media.ManifestParser.AccessibilityPurpose
+ *           } accessibilityPurpose
+ *   The DASH accessibility descriptor, if one was provided for this track.
+ * @property {boolean} forced
+ *   True indicates that this in the forced text language for the content.
+ *   This flag is based on signals from the manifest.
+ * @property {?string} originalTextId
+ *   The original ID of the text track, if any, as it
+ *   appeared in the original manifest.
+ * @property {?string} originalLanguage
+ *   The original language of the track, if any, as it appeared in the original
+ *   manifest.  This is the exact value provided in the manifest; for normalized
+ *   value use <code>language</code> property.
+ * @exportDoc
+ */
+shaka.extern.TextTrack;
+
+
+/**
+ * @typedef {{
+ *   active: boolean,
+ *   bandwidth: number,
+ *   width: ?number,
+ *   height: ?number,
+ *   frameRate: ?number,
+ *   pixelAspectRatio: ?string,
+ *   hdr: ?string,
+ *   colorGamut: ?string,
+ *   videoLayout: ?string,
+ *   mimeType: ?string,
+ *   codecs: ?string
+ * }}
+ *
+ * @description
+ * An object describing a video track.  This object should be treated as
+ * read-only as changing any values does not have any effect.
+ *
+ * @property {boolean} active
+ *   If true, this is the track being streamed (another track may be
+ *   visible/audible in the buffer).
+ * @property {number} bandwidth
+ *   The bandwidth required to play the track, in bits/sec.
+ * @property {?number} width
+ *   The video width provided in the manifest, if present.
+ * @property {?number} height
+ *   The video height provided in the manifest, if present.
+ * @property {?number} frameRate
+ *   The video framerate provided in the manifest, if present.
+ * @property {?string} pixelAspectRatio
+ *   The video pixel aspect ratio provided in the manifest, if present.
+ * @property {?string} hdr
+ *   The video HDR provided in the manifest, if present.
+ * @property {?string} colorGamut
+ *   The video color gamut provided in the manifest, if present.
+ * @property {?string} videoLayout
+ *   The video layout provided in the manifest, if present.
+ * @property {?string} mimeType
+ *   The video MIME type of the content provided in the manifest.
+ * @property {?string} codecs
+ *   The video codecs string provided in the manifest, if present.
+ * @exportDoc
+ */
+shaka.extern.VideoTrack;
+
+
+/**
+ * @typedef {{
+ *   id: number,
+ *   type: string,
+ *   bandwidth: number,
+ *   width: ?number,
+ *   height: ?number,
+ *   mimeType: ?string,
+ *   codecs: ?string,
+ *   tilesLayout: ?string,
+ *   originalImageId: ?string
+ * }}
+ *
+ * @description
+ * An object describing a image track.  This object should be treated as
+ * read-only as changing any values does not have any effect.
+ *
+ * @property {number} id
+ *   The unique ID of the track.
+ * @property {string} type
+ *   The type of track, either <code>'variant'</code> or <code>'text'</code>
+ *   or <code>'image'</code>.
+ * @property {number} bandwidth
+ *   The bandwidth required to play the track, in bits/sec.
+ * @property {?number} width
+ *   The width provided in the manifest, if present.
+ * @property {?number} height
+ *   The height provided in the manifest, if present.
+ * @property {?string} mimeType
+ *   The MIME type of the content provided in the manifest.
+ * @property {?string} codecs
+ *   The image codecs string provided in the manifest, if present.
+ * @property {?string} tilesLayout
+ *   The value is a grid-item-dimension consisting of two positive decimal
+ *   integers in the format: column-x-row ('4x3'). It describes the arrangement
+ *   of Images in a Grid. The minimum valid LAYOUT is '1x1'.
+ * @property {?string} originalImageId
+ *   The original ID of the image track, if any, as it appeared in the original
+ *   manifest.
+ * @exportDoc
+ */
+shaka.extern.ImageTrack;
 
 
 /**
@@ -1706,9 +1873,6 @@ shaka.extern.LiveSyncConfiguration;
  *   useNativeHlsForFairPlay: boolean,
  *   inaccurateManifestTolerance: number,
  *   lowLatencyMode: boolean,
- *   forceHTTP: boolean,
- *   forceHTTPS: boolean,
- *   minBytesForProgressEvents: number,
  *   preferNativeDash: boolean,
  *   preferNativeHls: boolean,
  *   updateIntervalSeconds: number,
@@ -1731,7 +1895,8 @@ shaka.extern.LiveSyncConfiguration;
  *   dontChooseCodecs: boolean,
  *   shouldFixTimestampOffset: boolean,
  *   avoidEvictionOnQuotaExceededError: boolean,
- *   crossBoundaryStrategy: shaka.config.CrossBoundaryStrategy
+ *   crossBoundaryStrategy: shaka.config.CrossBoundaryStrategy,
+ *   returnToEndOfLiveWindowWhenOutside: boolean
  * }}
  *
  * @description
@@ -1865,21 +2030,6 @@ shaka.extern.LiveSyncConfiguration;
  *   other things, see: docs/tutorials/config.md
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {boolean} forceHTTP
- *   If true, if the protocol is HTTPs change it to HTTP.
- *   If both forceHTTP and forceHTTPS are set, forceHTTPS wins.
- *   <br>
- *   Defaults to <code>false</code>.
- * @property {boolean} forceHTTPS
- *   If true, if the protocol is HTTP change it to HTTPs.
- *   If both forceHTTP and forceHTTPS are set, forceHTTPS wins.
- *   <br>
- *   Defaults to <code>false</code>.
- * @property {number} minBytesForProgressEvents
- *   Defines minimum number of bytes that should be used to emit progress event,
- *   if possible. To avoid issues around feeding ABR with request history, this
- *   value should be greater than or equal to `abr.advanced.minBytes`.
- *   By default equals 16e3 (the same value as `abr.advanced.minBytes`).
  * @property {boolean} preferNativeDash
  *   If true, prefer native DASH playback when possible, regardless of platform.
  *   <br>
@@ -1993,9 +2143,44 @@ shaka.extern.LiveSyncConfiguration;
  *   Defaults to <code>KEEP</code> except on Tizen 3 where the default value
  *   is <code>RESET_TO_ENCRYPTED</code> and WebOS 3 where the default value
  *   is <code>RESET</code>.
+ * @property {boolean} returnToEndOfLiveWindowWhenOutside
+ *   If true, when the playhead is behind the start of the live window,
+ *   it will be moved to the end of the live window, instead of the start.
+ *   <br>
+ *   Defaults to <code>false</code>.
  * @exportDoc
  */
 shaka.extern.StreamingConfiguration;
+
+
+/**
+ * @typedef {{
+ *   forceHTTP: boolean,
+ *   forceHTTPS: boolean,
+ *   minBytesForProgressEvents: number
+ * }}
+ *
+ * @description
+ * The Networking's configuration options.
+ *
+ * @property {boolean} forceHTTP
+ *   If true, if the protocol is HTTPs change it to HTTP.
+ *   If both forceHTTP and forceHTTPS are set, forceHTTPS wins.
+ *   <br>
+ *   Defaults to <code>false</code>.
+ * @property {boolean} forceHTTPS
+ *   If true, if the protocol is HTTP change it to HTTPs.
+ *   If both forceHTTP and forceHTTPS are set, forceHTTPS wins.
+ *   <br>
+ *   Defaults to <code>false</code>.
+ * @property {number} minBytesForProgressEvents
+ *   Defines minimum number of bytes that should be used to emit progress event,
+ *   if possible. To avoid issues around feeding ABR with request history, this
+ *   value should be greater than or equal to `abr.advanced.minBytes`.
+ *   By default equals 16e3 (the same value as `abr.advanced.minBytes`).
+ * @exportDoc
+ */
+shaka.extern.NetworkingConfiguration;
 
 
 /**
@@ -2004,8 +2189,11 @@ shaka.extern.StreamingConfiguration;
  *   addExtraFeaturesToSourceBuffer: function(string): string,
  *   forceTransmux: boolean,
  *   insertFakeEncryptionInInit: boolean,
+ *   correctEc3Enca: boolean,
  *   modifyCueCallback: shaka.extern.TextParser.ModifyCueCallback,
- *   dispatchAllEmsgBoxes: boolean
+ *   dispatchAllEmsgBoxes: boolean,
+ *   useSourceElements: boolean,
+ *   durationReductionEmitsUpdateEnd: boolean
  * }}
  *
  * @description
@@ -2040,6 +2228,13 @@ shaka.extern.StreamingConfiguration;
  *   <br><br>
  *   <br>
  *   Defaults to <code>true</code>.
+ * @property {boolean} correctEc3Enca
+ *   If true, will apply a work-around for Audio init segments signaling
+ *   EC-3 codec with protection. This will force the ChannelCount field
+ *   of the 'enca' box to be set to 2, which is required via the dolby
+ *   spec.
+ *   <br>
+ *   This value defaults to <code>false</code>.
  * @property {shaka.extern.TextParser.ModifyCueCallback} modifyCueCallback
  *    A callback called for each cue after it is parsed, but right before it
  *    is appended to the presentation.
@@ -2048,6 +2243,23 @@ shaka.extern.StreamingConfiguration;
  *   If true, all emsg boxes are parsed and dispatched.
  *   <br>
  *   Defaults to <code>false</code>.
+ * @property {boolean} useSourceElements
+ *   If true, uses <source> element. Otherwise,
+ *   sets the mediaSource url blob to src attribute.
+ *   Disabling it will prevent using AirPlay on MSE.
+ *   <br>
+ *   Defaults to <code>true</code>.
+ * @property {boolean} durationReductionEmitsUpdateEnd
+ *   https://www.w3.org/TR/media-source-2/#duration-change-algorithm
+ *   "Duration reductions that would truncate currently buffered media are
+ *   disallowed.
+ *   When truncation is necessary, use remove() to reduce the buffered range
+ *   before updating duration."
+ *   When set indicates media source duration change can truncate buffer, hence
+ *   updateend event is expected on setDuration operation if new duration is
+ *   smaller than existing value.
+ *   <br>
+ *   Defaults to <code>true</code>.
  * @exportDoc
  */
 shaka.extern.MediaSourceConfiguration;
@@ -2059,7 +2271,9 @@ shaka.extern.MediaSourceConfiguration;
  *   skipPlayDetection: boolean,
  *   supportsMultipleMediaElements: boolean,
  *   disableHLSInterstitial: boolean,
- *   disableDASHInterstitial: boolean
+ *   disableDASHInterstitial: boolean,
+ *   allowPreloadOnDomElements: boolean,
+ *   allowStartInMiddleOfInterstitial: boolean
  * }}
  *
  * @description
@@ -2094,6 +2308,14 @@ shaka.extern.MediaSourceConfiguration;
  *   If this is true, we ignore DASH interstitial events.
  *   <br>
  *   Defaults to <code>false</code>.
+ * @property {boolean} allowPreloadOnDomElements
+ *   If this is true, we will use HTMLLinkElement to preload some resources.
+ *   <br>
+ *   Defaults to <code>true</code>.
+ * @property {boolean} allowStartInMiddleOfInterstitial
+ *   If this is true, we will allow start in the middle of an interstitial.
+ *   <br>
+ *   Defaults to <code>true</code>.
  *
  * @exportDoc
  */
@@ -2117,7 +2339,8 @@ shaka.extern.AdsConfiguration;
  *   safeMarginSwitch: number,
  *   cacheLoadThreshold: number,
  *   minTimeToSwitch: number,
- *   preferNetworkInformationBandwidth: boolean
+ *   preferNetworkInformationBandwidth: boolean,
+ *   removeLatencyFromFirstPacketTime: boolean
  * }}
  *
  * @property {boolean} enabled
@@ -2210,6 +2433,11 @@ shaka.extern.AdsConfiguration;
  *   trust the information provided by the browser.
  *   <br>
  *   Defaults to <code>false</code>.
+ * @property {boolean} removeLatencyFromFirstPacketTime
+ *   If true, we remove the latency from first packet time. This time is
+ *   used to calculate the real bandwidth.
+ *   <br>
+ *   Defaults to <code>true</code>.
  * @exportDoc
  */
 shaka.extern.AbrConfiguration;
@@ -2344,7 +2572,8 @@ shaka.extern.CmsdConfiguration;
  *   enabled: boolean,
  *   dynamicPerformanceScaling: boolean,
  *   logLevel: number,
- *   drawLogo: boolean
+ *   drawLogo: boolean,
+ *   poster: boolean
  * }}
  *
  * @description
@@ -2382,6 +2611,11 @@ shaka.extern.CmsdConfiguration;
  *   unless explicitly set to true through config.
  *   <br>
  *   Defaults to <code>false</code>.
+ * @property {boolean} poster
+ *   If <code>true</code>, render a poster frame before the video is started.
+ *   Defaults to true for the lib and set to true in the integration.
+ *   <br>
+ *   Defaults to <code>true</code>.
  * @exportDoc
  */
 shaka.extern.LcevcConfiguration;
@@ -2458,6 +2692,7 @@ shaka.extern.TextDisplayerConfiguration;
  *   drm: shaka.extern.DrmConfiguration,
  *   manifest: shaka.extern.ManifestConfiguration,
  *   streaming: shaka.extern.StreamingConfiguration,
+ *   networking: shaka.extern.NetworkingConfiguration,
  *   mediaSource: shaka.extern.MediaSourceConfiguration,
  *   abrFactory: shaka.extern.AbrManager.Factory,
  *   adaptationSetCriteriaFactory: shaka.media.AdaptationSetCriteria.Factory,
@@ -2482,6 +2717,7 @@ shaka.extern.TextDisplayerConfiguration;
  *   preferredDecodingAttributes: !Array<string>,
  *   preferForcedSubs: boolean,
  *   preferSpatialAudio: boolean,
+ *   queue: shaka.extern.QueueConfiguration,
  *   restrictions: shaka.extern.Restrictions,
  *   playRangeStart: number,
  *   playRangeEnd: number,
@@ -2502,6 +2738,8 @@ shaka.extern.TextDisplayerConfiguration;
  *   Manifest configuration and settings.
  * @property {shaka.extern.StreamingConfiguration} streaming
  *   Streaming configuration and settings.
+ * @property {shaka.extern.NetworkingConfiguration} networking
+ *   Networking configuration and settings.
  * @property {shaka.extern.MediaSourceConfiguration} mediaSource
  *   Media source configuration and settings.
  * @property {shaka.extern.AbrManager.Factory} abrFactory
@@ -2606,6 +2844,8 @@ shaka.extern.TextDisplayerConfiguration;
  *   If true, a spatial audio track is preferred.
  *   <br>
  *   Defaults to <code>false</code>.
+ * @property {shaka.extern.QueueConfiguration} queue
+ *   Queue manager configuration and settings.
  * @property {shaka.extern.Restrictions} restrictions
  *   The application restrictions to apply to the tracks.  These are "hard"
  *   restrictions.  Any track that fails to meet these restrictions will not
@@ -2629,6 +2869,30 @@ shaka.extern.TextDisplayerConfiguration;
  * @exportDoc
  */
 shaka.extern.PlayerConfiguration;
+
+
+/**
+ * @typedef {{
+ *   preloadNextUrlWindow: number,
+ *   repeatMode: shaka.config.RepeatMode
+ * }}
+ *
+ * @description
+ * The Queue Manager's configuration options.
+ *
+ * @property {number} preloadNextUrlWindow
+ *   The window of time at the end of the presentation to begin preloading the
+ *   next item. Measured in seconds. If the value is 0, the next URL will not
+ *   be preloaded at all.
+ *   <br>
+ *   Defaults to <code>30</code>.
+ * @property {shaka.config.RepeatMode} repeatMode
+ *   Controls behavior of the queue when all items have been played.
+ *   <br>
+ *   Defaults to {@link shaka.config.RepeatMode#OFF}.
+ * @exportDoc
+ */
+shaka.extern.QueueConfiguration;
 
 
 /**
@@ -2661,6 +2925,8 @@ shaka.extern.LanguageRole;
  *   startTime: number,
  *   duration: number,
  *   uris: !Array<string>,
+ *   startByte: number,
+ *   endByte: ?number,
  *   width: number,
  *   sprite: boolean,
  *   mimeType: ?string,
@@ -2688,6 +2954,12 @@ shaka.extern.LanguageRole;
  * @property {!Array<string>} uris
  *   An array of URIs to attempt.  They will be tried in the order they are
  *   given.
+ * @property {number} startByte
+ *   The offset from the start of the uri resource.
+ * @property {?number} endByte
+ *   The offset from the start of the resource to the end of the segment,
+ *   inclusive.  A value of null indicates that the segment extends to the end
+ *   of the resource.
  * @property {number} width
  *    The thumbnail width in px.
  * @property {boolean} sprite
@@ -2744,3 +3016,20 @@ shaka.extern.Chapter;
  * @exportDoc
  */
 shaka.extern.ExtraText;
+
+
+/**
+ * @typedef {{
+ *   uri: string,
+ *   language: string,
+ *   mime: string
+ * }}
+ *
+ * @property {string} uri
+ *   The URI of the chapter.
+ * @property {string} language
+ *   The language of the chapter (e.g. 'en').
+ * @property {string} mime
+ *   The MIME type of the chapter (e.g. 'text/vtt')
+ */
+shaka.extern.ExtraChapter;

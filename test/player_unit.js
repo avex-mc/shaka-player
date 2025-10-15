@@ -752,8 +752,8 @@ describe('Player', () => {
 
       it('only applies to DASH streams', async () => {
         video.canPlayType.and.returnValue('maybe');
-        spyOn(shaka.util.Platform, 'anyMediaElement').and.returnValue(video);
-        spyOn(shaka.util.Platform, 'supportsMediaSource').and.returnValue(true);
+        spyOn(shaka.util.Dom, 'anyMediaElement').and.returnValue(video);
+        spyOn(deviceDetected, 'supportsMediaSource').and.returnValue(true);
         // Make sure player.load() resolves for src=
         spyOn(shaka.util.MediaReadyState, 'waitForReadyState').and.callFake(
             (mediaElement, readyState, eventManager, callback) => {
@@ -773,7 +773,7 @@ describe('Player', () => {
 
       it('does not apply to non-DASH streams', async () => {
         video.canPlayType.and.returnValue('maybe');
-        spyOn(shaka.util.Platform, 'supportsMediaSource').and.returnValue(true);
+        spyOn(deviceDetected, 'supportsMediaSource').and.returnValue(true);
 
         player.configure({
           streaming: {
@@ -808,9 +808,9 @@ describe('Player', () => {
 
       it('only applies to HLS streams', async () => {
         video.canPlayType.and.returnValue('maybe');
-        spyOn(shaka.util.Platform, 'anyMediaElement').and.returnValue(video);
-        spyOn(shaka.util.Platform, 'supportsMediaSource').and.returnValue(true);
-        spyOn(shaka.util.Platform, 'isApple').and.returnValue(false);
+        spyOn(shaka.util.Dom, 'anyMediaElement').and.returnValue(video);
+        spyOn(deviceDetected, 'supportsMediaSource').and.returnValue(true);
+        spyOn(deviceDetected, 'getBrowserEngine').and.returnValue('UNKNOWN');
         // Make sure player.load() resolves for src=
         spyOn(shaka.util.MediaReadyState, 'waitForReadyState').and.callFake(
             (mediaElement, readyState, eventManager, callback) => {
@@ -830,8 +830,8 @@ describe('Player', () => {
 
       it('does not apply to non-HLS streams', async () => {
         video.canPlayType.and.returnValue('maybe');
-        spyOn(shaka.util.Platform, 'supportsMediaSource').and.returnValue(true);
-        spyOn(shaka.util.Platform, 'isApple').and.returnValue(false);
+        spyOn(deviceDetected, 'supportsMediaSource').and.returnValue(true);
+        spyOn(deviceDetected, 'getBrowserEngine').and.returnValue('UNKNOWN');
 
         player.configure({
           streaming: {
@@ -1523,6 +1523,8 @@ describe('Player', () => {
     let variantTracks;
     /** @type {!Array<shaka.extern.AudioTrack>} */
     let audioTracks;
+    /** @type {!Array<shaka.extern.VideoTrack>} */
+    let videoTracks;
     /** @type {!Array<shaka.extern.Track>} */
     let textTracks;
     /** @type {!Array<shaka.extern.Track>} */
@@ -2166,6 +2168,35 @@ describe('Player', () => {
         },
       ];
 
+      videoTracks = [
+        {
+          active: true,
+          bandwidth: 1000,
+          width: 100,
+          height: 200,
+          frameRate: 1000000 / 42000,
+          pixelAspectRatio: '59:54',
+          hdr: null,
+          colorGamut: null,
+          videoLayout: null,
+          mimeType: 'video/mp4',
+          codecs: 'avc1.4d401f',
+        },
+        {
+          active: false,
+          bandwidth: 2000,
+          width: 200,
+          height: 400,
+          frameRate: 24,
+          pixelAspectRatio: '59:54',
+          hdr: null,
+          colorGamut: null,
+          videoLayout: null,
+          mimeType: 'video/mp4',
+          codecs: 'avc1.4d401f',
+        },
+      ];
+
       textTracks = [
         {
           id: 50,
@@ -2176,36 +2207,12 @@ describe('Player', () => {
           label: 'Spanish',
           kind: 'caption',
           mimeType: 'text/vtt',
-          audioMimeType: null,
-          videoMimeType: null,
           codecs: null,
-          audioCodec: null,
-          videoCodec: null,
           primary: false,
           roles: [],
-          audioRoles: null,
           forced: false,
-          channelsCount: null,
-          audioSamplingRate: null,
-          spatialAudio: false,
-          tilesLayout: null,
-          audioBandwidth: null,
-          videoBandwidth: null,
-          bandwidth: 0,
-          width: null,
-          height: null,
-          frameRate: null,
-          pixelAspectRatio: null,
-          hdr: null,
-          colorGamut: null,
-          videoLayout: null,
-          videoId: null,
-          audioId: null,
-          audioGroupId: null,
-          originalAudioId: null,
-          originalVideoId: null,
+          bandwidth: 10,
           originalTextId: 'text-es',
-          originalImageId: null,
           accessibilityPurpose: undefined,
         },
         {
@@ -2217,36 +2224,12 @@ describe('Player', () => {
           label: 'English',
           kind: 'caption',
           mimeType: 'application/ttml+xml',
-          audioMimeType: null,
-          videoMimeType: null,
           codecs: null,
-          audioCodec: null,
-          videoCodec: null,
           primary: false,
           roles: ['main'],
-          audioRoles: null,
           forced: false,
-          channelsCount: null,
-          audioSamplingRate: null,
-          spatialAudio: false,
-          tilesLayout: null,
-          audioBandwidth: null,
-          videoBandwidth: null,
-          bandwidth: 0,
-          width: null,
-          height: null,
-          frameRate: null,
-          pixelAspectRatio: null,
-          hdr: null,
-          colorGamut: null,
-          videoLayout: null,
-          videoId: null,
-          audioId: null,
-          audioGroupId: null,
-          originalAudioId: null,
-          originalVideoId: null,
+          bandwidth: 10,
           originalTextId: 'text-en',
-          originalImageId: null,
           accessibilityPurpose: undefined,
         },
         {
@@ -2258,36 +2241,12 @@ describe('Player', () => {
           label: 'English',
           kind: 'caption',
           mimeType: 'application/ttml+xml',
-          audioMimeType: null,
-          videoMimeType: null,
           codecs: null,
-          audioCodec: null,
-          videoCodec: null,
           primary: false,
           roles: ['commentary'],
-          audioRoles: null,
           forced: false,
-          channelsCount: null,
-          spatialAudio: false,
-          audioSamplingRate: null,
-          tilesLayout: null,
-          audioBandwidth: null,
-          videoBandwidth: null,
-          bandwidth: 0,
-          width: null,
-          height: null,
-          frameRate: null,
-          pixelAspectRatio: null,
-          hdr: null,
-          colorGamut: null,
-          videoLayout: null,
-          videoId: null,
-          audioId: null,
-          audioGroupId: null,
-          originalAudioId: null,
-          originalVideoId: null,
+          bandwidth: 10,
           originalTextId: 'text-commentary',
-          originalImageId: null,
           accessibilityPurpose: undefined,
         },
       ];
@@ -2295,44 +2254,14 @@ describe('Player', () => {
       imageTracks = [
         {
           id: 53,
-          active: false,
           type: ContentType.IMAGE,
-          language: '',
-          originalLanguage: null,
-          label: null,
-          kind: null,
           mimeType: 'image/jpeg',
-          audioMimeType: null,
-          videoMimeType: null,
           codecs: null,
-          audioCodec: null,
-          videoCodec: null,
-          primary: false,
-          roles: [],
-          audioRoles: null,
-          forced: false,
-          channelsCount: null,
-          audioSamplingRate: null,
-          spatialAudio: false,
           tilesLayout: '1x1',
-          audioBandwidth: null,
-          videoBandwidth: null,
           bandwidth: 10,
           width: 200,
           height: 400,
-          frameRate: null,
-          pixelAspectRatio: null,
-          hdr: null,
-          colorGamut: null,
-          videoLayout: null,
-          videoId: null,
-          audioId: null,
-          audioGroupId: null,
-          originalAudioId: null,
-          originalVideoId: null,
-          originalTextId: null,
           originalImageId: 'thumbnail',
-          accessibilityPurpose: null,
         },
       ];
 
@@ -2354,6 +2283,7 @@ describe('Player', () => {
     it('returns the correct tracks', () => {
       expect(player.getVariantTracks()).toEqual(variantTracks);
       expect(player.getAudioTracks()).toEqual(audioTracks);
+      expect(player.getVideoTracks()).toEqual(videoTracks);
       expect(player.getTextTracks()).toEqual(textTracks);
       expect(player.getImageTracks()).toEqual(imageTracks);
     });
@@ -2365,6 +2295,7 @@ describe('Player', () => {
         // The player does not yet have a manifest.
         expect(player.getVariantTracks()).toEqual([]);
         expect(player.getAudioTracks()).toEqual([]);
+        expect(player.getVideoTracks()).toEqual([]);
         expect(player.getTextTracks()).toEqual([]);
         expect(player.getImageTracks()).toEqual([]);
 
@@ -2376,6 +2307,7 @@ describe('Player', () => {
 
       expect(player.getVariantTracks()).toEqual(variantTracks);
       expect(player.getAudioTracks()).toEqual(audioTracks);
+      expect(player.getVideoTracks()).toEqual(videoTracks);
       expect(player.getTextTracks()).toEqual(textTracks);
       expect(player.getImageTracks()).toEqual(imageTracks);
     });
@@ -2797,6 +2729,23 @@ describe('Player', () => {
         expect(variantChanged).not.toHaveBeenCalled();
       });
 
+      it('in selectVideoTrack', async () => {
+        // Any variant track we're not already streaming.
+        const newTrack = player.getVideoTracks().filter((t) => !t.active)[0];
+
+        // Call selectVariantTrack with a new track.  Expect an event to fire.
+        player.selectVideoTrack(newTrack);
+        await shaka.test.Util.shortDelay();
+        expect(variantChanged).toHaveBeenCalled();
+        variantChanged.calls.reset();
+
+        // Call again with the same track, and expect no event to fire, since
+        // nothing changed this time.
+        player.selectVideoTrack(newTrack);
+        await shaka.test.Util.shortDelay();
+        expect(variantChanged).not.toHaveBeenCalled();
+      });
+
       it('in selectTextLanguage', async () => {
         // The current text language.
         const currentLanguage = player.getTextTracks()
@@ -2839,7 +2788,7 @@ describe('Player', () => {
         expect(variantChanged).not.toHaveBeenCalled();
       });
 
-      it('in selectAudioLanguage', async () => {
+      it('in selectAudioTrack', async () => {
         // New audio track.
         const newAudioTrack = player.getAudioTracks().find((t) => !t.active);
         goog.asserts.assert(newAudioTrack, 'audio track must be non-null');
@@ -3219,7 +3168,8 @@ describe('Player', () => {
       });
 
       it('includes selectVariantTrack choices', () => {
-        const track = player.getVariantTracks()[3];
+        const track = player.getVariantTracks().find((t) => !t.active);
+        goog.asserts.assert(track, 'track should not be null!');
 
         const variants = manifest.variants;
         const variant = variants.find((variant) => variant.id == track.id);
@@ -3237,7 +3187,7 @@ describe('Player', () => {
       });
 
       it('includes adaptation choices', () => {
-        const variant = manifest.variants[3];
+        const variant = manifest.variants[2];
 
         switch_(variant);
         checkHistory(jasmine.arrayContaining([
@@ -4501,6 +4451,45 @@ describe('Player', () => {
     });
   });
 
+  describe('isVideoOnly', () => {
+    it('detects video-only content', async () => {
+      // False before we've loaded anything.
+      expect(player.isAudioOnly()).toBe(false);
+
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.addVariant(0, (variant) => {
+          variant.addVideo(0);
+          variant.addAudio(1);
+        });
+      });
+      await player.load(fakeManifestUri, 0, fakeMimeType);
+      // We have audio & video tracks, so this is not video-only.
+      expect(player.isVideoOnly()).toBe(false);
+
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.addVariant(0, (variant) => {
+          variant.addAudio(1);
+        });
+      });
+      await player.load(fakeManifestUri, 0, fakeMimeType);
+      // We have audio-only tracks, so this is not video-only.
+      expect(player.isVideoOnly()).toBe(false);
+
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.addVariant(0, (variant) => {
+          variant.addVideo(0);
+        });
+      });
+      await player.load(fakeManifestUri, 0, fakeMimeType);
+      // We have video-only tracks, so this is video-only.
+      expect(player.isVideoOnly()).toBe(true);
+
+      await player.unload();
+      // When we have nothing loaded, we go back to not video-only status.
+      expect(player.isVideoOnly()).toBe(false);
+    });
+  });
+
   describe('load', () => {
     it('tolerates bandwidth of NaN, undefined, or 0', async () => {
       // Regression test for https://github.com/shaka-project/shaka-player/issues/938
@@ -5081,7 +5070,7 @@ describe('Player', () => {
 
   /**
    * Gets the currently active text track.
-   * @return {?shaka.extern.Track}
+   * @return {?shaka.extern.TextTrack}
    */
   function getActiveTextTrack() {
     const activeTracks = player.getTextTracks().filter((track) => {

@@ -34,7 +34,9 @@ describe('Ads', () => {
     document.body.appendChild(video);
     adContainer =
       /** @type {!HTMLElement} */ (document.createElement('div'));
-    adContainer.style.position = 'relative';
+    adContainer.style.position = 'absolute';
+    adContainer.style.top = '0px';
+    adContainer.style.left = '0px';
     adContainer.style.width = '600px';
     adContainer.style.height = '400px';
     document.body.appendChild(adContainer);
@@ -95,7 +97,7 @@ describe('Ads', () => {
     const streamUri = '/base/test/test/assets/hls-interstitial/main.m3u8';
 
     it('with support for multiple media elements', async () => {
-      if (shaka.util.Platform.isSmartTV()) {
+      if (!player.getConfiguration().ads.supportsMultipleMediaElements) {
         pending('Platform without support for multiple media elements.');
       }
       player.configure('ads.supportsMultipleMediaElements', true);
@@ -103,7 +105,7 @@ describe('Ads', () => {
       adManager.initInterstitial(adContainer, player, video);
 
       await player.load(streamUri);
-      await video.play();
+      video.play();
       expect(player.isLive()).toBe(false);
 
       // Wait a maximum of 10 seconds before the ad starts playing.
@@ -146,7 +148,7 @@ describe('Ads', () => {
       adManager.initInterstitial(adContainer, player, video);
 
       await player.load(streamUri);
-      await video.play();
+      video.play();
       expect(player.isLive()).toBe(false);
 
       // Wait a maximum of 10 seconds before the ad starts playing.
@@ -187,7 +189,7 @@ describe('Ads', () => {
       goog.asserts.assert(adManager, 'Must have adManager');
 
       await player.load(streamUri);
-      await video.play();
+      video.play();
       expect(player.isLive()).toBe(false);
 
       // Wait a maximum of 10 seconds before the ad starts playing.
@@ -235,7 +237,7 @@ describe('Ads', () => {
       adManager.initInterstitial(adContainer, player, video);
 
       await player.load(streamUri);
-      await video.play();
+      video.play();
       expect(player.isLive()).toBe(false);
 
       // Wait a maximum of 10 seconds before the ad starts playing.

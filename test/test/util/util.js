@@ -58,6 +58,35 @@ shaka.test.AnyOrNull = class {
   }
 };
 
+shaka.test.AnythingOrNull = class {
+  constructor() {
+    /** @type {!Object} */
+    this.anything = jasmine.anything();
+  }
+
+  /**
+   * @param {?Object} other
+   * @return {boolean}
+   * @suppress {checkTypes}
+   */
+  asymmetricMatch(other) {
+    if (other == null) {
+      return true;
+    } else {
+      return this.anything.asymmetricMatch(other);
+    }
+  }
+
+  /**
+   * @return {boolean}
+   * @suppress {checkTypes}
+   */
+  jasmineToString() {
+    return this.anything.jasmineToString()
+        .replace('jasmine.anything', 'shaka.test.AnythingOrNull');
+  }
+};
+
 shaka.test.Util = class {
   /**
    * Fakes an event loop. Each tick processes some number of instantaneous
@@ -369,9 +398,7 @@ shaka.test.Util = class {
       const codecs = StreamUtils.getCorrectVideoCodecs(
           MimeUtils.getCodecs(mimetype));
       const baseMimeType = MimeUtils.getBasicType(mimetype);
-      if (codecs.startsWith('hvc1.') &&
-          shaka.util.Platform.isWindows() && shaka.util.Platform.isFirefox()) {
-        // It seems that HEVC on Firefox Windows is incomplete.
+      if (codecs.startsWith('hvc1.') && deviceDetected.disableHEVCSupport()) {
         return false;
       }
       // VideoConfiguration
@@ -395,6 +422,39 @@ shaka.test.Util = class {
     const result =
         await navigator.mediaCapabilities.decodingInfo(mediaDecodingConfig);
     return result.supported;
+  }
+
+  /** @param {string} userAgent */
+  static setUserAgent(userAgent) {
+    shaka.test.Util.setNavigatorProperty('userAgent', userAgent);
+  }
+
+  /** @param {?Object} userAgentData */
+  static setUserAgentData(userAgentData) {
+    shaka.test.Util.setNavigatorProperty('userAgentData', userAgentData);
+  }
+
+  /** @param {string} vendor */
+  static setVendor(vendor) {
+    shaka.test.Util.setNavigatorProperty('vendor', vendor);
+  }
+
+  /** @param {string} platform */
+  static setPlatform(platform) {
+    shaka.test.Util.setNavigatorProperty('platform', platform);
+  }
+
+  /** @param {number} maxTouchPoints */
+  static setMaxTouchPoints(maxTouchPoints) {
+    shaka.test.Util.setNavigatorProperty('maxTouchPoints', maxTouchPoints);
+  }
+
+  /**
+   * @param {string} key
+   * @param {*} value
+   */
+  static setNavigatorProperty(key, value) {
+    Object.defineProperty(navigator, key, {value, configurable: true});
   }
 };
 

@@ -8,15 +8,23 @@
 +../../lib/config/auto_show_text.js
 +../../lib/config/codec_switching_strategy.js
 +../../lib/config/cross_boundary_strategy.js
++../../lib/config/repeat_mode.js
 
 +../../lib/debug/asserts.js
 +../../lib/debug/log.js
++../../lib/debug/running_in_lab.js
 
 +../../lib/dependencies/all.js
 
 +../../lib/deprecate/deprecate.js
 +../../lib/deprecate/enforcer.js
 +../../lib/deprecate/version.js
+
++../../lib/device/abstract_device.js
++../../lib/device/apple_browser.js
++../../lib/device/default_browser.js
++../../lib/device/device_factory.js
++../../lib/device/i_device.js
 
 +../../lib/drm/drm_engine.js
 +../../lib/drm/drm_utils.js
@@ -28,7 +36,6 @@
 +../../lib/media/buffering_observer.js
 +../../lib/media/closed_caption_parser.js
 +../../lib/media/content_workarounds.js
-+../../lib/media/example_based_criteria.js
 +../../lib/media/gap_jumping_controller.js
 +../../lib/media/manifest_filterer.js
 +../../lib/media/manifest_parser.js
@@ -64,6 +71,7 @@
 
 +../../lib/text/cue.js
 +../../lib/text/cue_region.js
++../../lib/text/native_text_displayer.js
 +../../lib/text/simple_text_displayer.js
 +../../lib/text/stub_text_displayer.js
 +../../lib/text/text_engine.js
@@ -102,6 +110,7 @@
 +../../lib/util/media_ready_state_utils.js
 +../../lib/util/mime_utils.js
 +../../lib/util/mp4_box_parsers.js
++../../lib/util/mp4_generator.js
 +../../lib/util/mp4_parser.js
 +../../lib/util/multi_map.js
 +../../lib/util/mutex.js
@@ -110,7 +119,6 @@
 +../../lib/util/object_utils.js
 +../../lib/util/operation_manager.js
 +../../lib/util/periods.js
-+../../lib/util/platform.js
 +../../lib/util/player_configuration.js
 +../../lib/util/pssh.js
 +../../lib/util/public_promise.js
@@ -120,6 +128,7 @@
 +../../lib/util/string_utils.js
 +../../lib/util/switch_history.js
 +../../lib/util/text_parser.js
++../../lib/util/time_utils.js
 +../../lib/util/timer.js
 +../../lib/util/ts_parser.js
 +../../lib/util/tXml.js
@@ -128,5 +137,7 @@
 
 +../../third_party/closure-uri/uri.js
 +../../third_party/closure-uri/utils.js
+
++../../third_party/language-mapping-list/language-mapping-list.js
 
 +@lcevc

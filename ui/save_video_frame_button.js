@@ -8,6 +8,7 @@
 goog.provide('shaka.ui.SaveVideoFrameButton');
 
 goog.require('shaka.ads.Utils');
+goog.require('shaka.cast.CastProxy');
 goog.require('shaka.ui.ContextMenu');
 goog.require('shaka.ui.Controls');
 goog.require('shaka.ui.Element');
@@ -31,6 +32,9 @@ shaka.ui.SaveVideoFrameButton = class extends shaka.ui.Element {
    */
   constructor(parent, controls) {
     super(parent, controls);
+
+    /** @private {shaka.cast.CastProxy} */
+    this.castProxy_ = this.controls.getCastProxy();
 
     const LocIds = shaka.ui.Locales.Ids;
     /** @private {!HTMLButtonElement} */
@@ -100,10 +104,6 @@ shaka.ui.SaveVideoFrameButton = class extends shaka.ui.Element {
       this.checkAvailability_();
     });
 
-    this.eventManager.listen(this.player, 'loaded', () => {
-      this.checkAvailability_();
-    });
-
     this.eventManager.listen(this.video, 'play', () => {
       this.checkAvailability_();
     });
@@ -113,6 +113,10 @@ shaka.ui.SaveVideoFrameButton = class extends shaka.ui.Element {
     });
 
     this.eventManager.listen(this.video, 'seeking', () => {
+      this.checkAvailability_();
+    });
+
+    this.eventManager.listen(this.controls, 'caststatuschanged', () => {
       this.checkAvailability_();
     });
 
@@ -153,13 +157,18 @@ shaka.ui.SaveVideoFrameButton = class extends shaka.ui.Element {
     if (this.controls.isPlayingVR()) {
       available = false;
     }
-    if (this.player.drmInfo() || this.player.isAudioOnly()) {
+    if (available && this.castProxy_.isCasting()) {
       available = false;
     }
-    if (this.ad) {
+    if (available &&
+        (this.player.drmInfo() || this.player.isAudioOnly())) {
       available = false;
     }
-    if (this.video.remote && this.video.remote.state != 'disconnected') {
+    if (available && this.ad) {
+      available = false;
+    }
+    if (available &&
+        this.video.remote && this.video.remote.state != 'disconnected') {
       available = false;
     }
     shaka.ui.Utils.setDisplay(this.button_, available);

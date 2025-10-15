@@ -119,22 +119,15 @@ shaka.ui.LanguageUtils = class {
       return name ? ' ' + name : name;
     };
 
-    /** @type {!Map<string, !Set<string>>} */
-    const rolesByLanguage = new Map();
-    for (const track of tracks) {
-      if (!rolesByLanguage.has(track.language)) {
-        rolesByLanguage.set(track.language, new Set());
-      }
-      rolesByLanguage.get(track.language).add(getRolesString(track));
-    }
-
     // 5. Add new buttons
     /** @type {!Set<string>} */
     const combinationsMade = new Set();
     const selectedCombination = selectedTrack ? getCombination(
         selectedTrack.language, getRolesString(selectedTrack),
         selectedTrack.label, selectedTrack.channelsCount,
-        selectedTrack.codecs, selectedTrack.spatialAudio) : '';
+        selectedTrack.codecs &&
+        shaka.util.MimeUtils.getNormalizedCodec(selectedTrack.codecs),
+        selectedTrack.spatialAudio) : '';
 
     for (const track of tracks) {
       const language = track.language;
@@ -221,9 +214,9 @@ shaka.ui.LanguageUtils = class {
 
 
   /**
-   * @param {!Array<shaka.extern.Track>} tracks
+   * @param {!Array<shaka.extern.TextTrack>} tracks
    * @param {!HTMLElement} langMenu
-   * @param {function(!shaka.extern.Track)} onTrackSelected
+   * @param {function(!shaka.extern.TextTrack)} onTrackSelected
    * @param {boolean} updateChosen
    * @param {!HTMLElement} currentSelectionElement
    * @param {shaka.ui.Localization} localization
@@ -266,15 +259,6 @@ shaka.ui.LanguageUtils = class {
       }
       return keys.join(': ');
     };
-
-    /** @type {!Map<string, !Set<string>>} */
-    const rolesByLanguage = new Map();
-    for (const track of tracks) {
-      if (!rolesByLanguage.has(track.language)) {
-        rolesByLanguage.set(track.language, new Set());
-      }
-      rolesByLanguage.get(track.language).add(getRolesString(track));
-    }
 
     // 5. Add new buttons
     /** @type {!Set<string>} */
@@ -410,10 +394,9 @@ shaka.ui.LanguageUtils = class {
     // "unknown"), we should append the original language code.
     // Otherwise, there may be multiple identical-looking items in the list.
     if (locale in mozilla.LanguageMapping) {
-      return mozilla.LanguageMapping[locale].nativeName;
+      return mozilla.LanguageMapping[locale];
     } else if (language in mozilla.LanguageMapping) {
-      return mozilla.LanguageMapping[language].nativeName +
-          ' (' + locale + ')';
+      return mozilla.LanguageMapping[language] + ' (' + locale + ')';
     } else {
       return resolve(shaka.ui.Locales.Ids.UNRECOGNIZED_LANGUAGE) +
           ' (' + locale + ')';

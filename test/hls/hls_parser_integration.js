@@ -22,14 +22,6 @@ describe('HlsParser', () => {
   /** @type {!shaka.test.Waiter} */
   let waiter;
 
-  function checkClearKeySupport() {
-    const clearKeySupport = shakaSupport.drm['org.w3.clearkey'];
-    if (!clearKeySupport) {
-      return false;
-    }
-    return clearKeySupport.encryptionSchemes.includes('cenc');
-  }
-
   beforeAll(async () => {
     video = shaka.test.UiUtils.createVideoElement();
     document.body.appendChild(video);
@@ -134,7 +126,7 @@ describe('HlsParser', () => {
   it('supports text without discontinuity', async () => {
     player.configure('autoShowText', shaka.config.AutoShowText.ALWAYS);
 
-    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @stylistic/max-len
     await player.load('/base/test/test/assets/hls-text-no-discontinuity/index.m3u8');
     await video.play();
 

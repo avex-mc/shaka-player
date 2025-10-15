@@ -174,6 +174,15 @@ function workAroundLegacyEdgePromiseIssues() {
 }
 
 /**
+ * Work around lab crashes by flagging if we're running in the lab.  This lets
+ * us add lab-specific workarounds for our unique lab environment.  This won't
+ * affect local test runs on developer machines or GitHub Actions workflows.
+ */
+function workAroundLabCrashes() {
+  shaka.debug.RunningInLab = getClientArg('runningInLab');
+}
+
+/**
  * Returns a Jasmine callback which shims the real callback and checks for
  * a certain condition.  The test will only be run if the condition is true.
  *
@@ -370,17 +379,15 @@ function configureJasmineEnvironment() {
     });
   }
 
-  // Work-around: allow the Tizen media pipeline to cool down.
-  // Without this, Tizen's pipeline seems to hang in subsequent tests.
-  // TODO: file a bug on Tizen
-  if (shaka.util.Platform.isTizen()) {
-    afterEach((done) => {  // eslint-disable-line no-restricted-syntax
-      originalSetTimeout(done, /* ms= */ 100);
-    });
-  }
+  const originalDevice = shaka.device.DeviceFactory.getDevice();
+  goog.asserts.assert(originalDevice, 'device must be non-null');
+  window.dump(originalDevice.toString());
+  window.deviceDetected = originalDevice;
 
-  // Reset decoding config cache after each test.
   afterEach(/** @suppress {accessControls} */ () => {
+    goog.asserts.assert(originalDevice, 'device must be non-null');
+    window.deviceDetected = originalDevice;
+    // Reset decoding config cache after each test.
     shaka.util.StreamUtils.clearDecodingConfigCache();
     shaka.media.Capabilities.MediaSourceTypeSupportMap.clear();
   });
@@ -450,6 +457,74 @@ async function checkSupport() {
 }
 
 /**
+ * Check if ClearKey CENC is supported.
+ * @return {boolean}
+ */
+function checkClearKeySupport() {
+  const clearKeySupport = shakaSupport.drm['org.w3.clearkey'];
+  if (!clearKeySupport) {
+    return false;
+  }
+  return clearKeySupport.encryptionSchemes.includes('cenc');
+}
+
+/**
+ * Check if PlayReady is supported.
+ * @return {boolean}
+ */
+function checkPlayReadySupport() {
+  if (shakaSupport.drm['com.microsoft.playready'] ||
+      shakaSupport.drm['com.microsoft.playready.recommendation'] ||
+      shakaSupport.drm['com.microsoft.playready.recommendation.3000']) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if Widevine is supported.
+ * @return {boolean}
+ */
+function checkWidevineSupport() {
+  if (shakaSupport.drm['com.widevine.alpha']) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if FairPlay is supported.
+ * @return {boolean}
+ */
+function checkFairPlaySupport() {
+  if (shakaSupport.drm['com.apple.fps'] && !getClientArg('runningInVM')) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if Widevine with persistence state is supported.
+ * @return {boolean}
+ */
+function checkWidevinePersistentSupport() {
+  const widevine = shakaSupport.drm['com.widevine.alpha'];
+  if (!widevine) {
+    return false;
+  }
+  return widevine.persistentState;
+}
+
+/**
+ * Check if Widevine and/or PlayReady are supported.
+ * @return {boolean}
+ */
+function checkTrueDrmSupport() {
+  // We don't include FairPlay because our test assets aren't ready to use it.
+  return checkWidevineSupport() || checkPlayReadySupport();
+}
+
+/**
  * Set up the Shaka Player test environment.
  * @return {!Promise}
  */
@@ -459,6 +534,7 @@ async function setupTestEnvironment() {
   failTestsOnUnhandledErrors();
   disableScrollbars();
   workAroundLegacyEdgePromiseIssues();
+  workAroundLabCrashes();
 
   // The spec filter callback occurs before calls to beforeAll, so we need to
   // install polyfills here to ensure that browser support is correctly

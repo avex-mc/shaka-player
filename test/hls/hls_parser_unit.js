@@ -3176,7 +3176,7 @@ describe('HlsParser', () => {
       const master = [
         '#EXTM3U\n',
         '#EXT-X-STREAM-INF:BANDWIDTH=200,CODECS="avc1.4d401f,vtt",',
-        'RESOLUTION=960x540,FRAME-RATE=60\n',
+        'RESOLUTION=960x540,FRAME-RATE=60,CLOSED-CAPTIONS=NONE\n',
         'video\n',
       ].join('');
 
@@ -3979,6 +3979,7 @@ describe('HlsParser', () => {
           stream.addDrmInfo('com.apple.fps', (drmInfo) => {
             drmInfo.addInitData('sinf', new Uint8Array(0));
             drmInfo.encryptionScheme = 'cenc';
+            drmInfo.keyIds.add('f93d4e700d7ddde90529a27735d9e7cb');
             drmInfo.addKeySystemUris(new Set(
                 ['skd://f93d4e700d7ddde90529a27735d9e7cb']));
           });
@@ -4302,6 +4303,7 @@ describe('HlsParser', () => {
             stream.addDrmInfo('com.apple.fps', (drmInfo) => {
               drmInfo.addInitData('sinf', new Uint8Array(0));
               drmInfo.encryptionScheme = 'cenc';
+              drmInfo.keyIds.add('f93d4e700d7ddde90529a27735d9e7cb');
               drmInfo.addKeySystemUris(new Set(
                   ['skd://f93d4e700d7ddde90529a27735d9e7cb']));
             });
@@ -4312,6 +4314,7 @@ describe('HlsParser', () => {
             stream.addDrmInfo('com.apple.fps', (drmInfo) => {
               drmInfo.addInitData('sinf', new Uint8Array(0));
               drmInfo.encryptionScheme = 'cenc';
+              drmInfo.keyIds.add('f93d4e700d7ddde90529a27735d9e7cb');
               drmInfo.addKeySystemUris(new Set(
                   ['skd://f93d4e700d7ddde90529a27735d9e7cb']));
             });
@@ -5228,6 +5231,7 @@ describe('HlsParser', () => {
       const master = [
         '#EXTM3U\n',
         '#EXT-X-DEFINE:NAME="auth",VALUE="?token=1"\n',
+        '#EXT-X-DEFINE:NAME="segmentPrefix",VALUE="/hls_test/segments/"\n',
         '#EXT-X-STREAM-INF:BANDWIDTH=200,CODECS="avc1,mp4a",',
         'RESOLUTION=960x540,FRAME-RATE=60,VIDEO="vid"\n',
         'audio.m3u8{$auth}\n',
@@ -5237,10 +5241,11 @@ describe('HlsParser', () => {
       const media = [
         '#EXTM3U\n',
         '#EXT-X-DEFINE:IMPORT="auth"\n',
+        '#EXT-X-DEFINE:IMPORT="segmentPrefix"\n',
         '#EXT-X-PLAYLIST-TYPE:VOD\n',
         '#EXT-X-MAP:URI="init.mp4{$auth}"\n',
         '#EXTINF:5,\n',
-        'segment.mp4{$auth}',
+        '{$segmentPrefix}segment.mp4{$auth}',
       ].join('');
 
       fakeNetEngine
@@ -5248,7 +5253,8 @@ describe('HlsParser', () => {
           .setResponseText('test:/host/audio.m3u8?token=1', media)
           .setResponseText('test:/host/video.m3u8?token=1', media)
           .setResponseValue('test:/host/init.mp4?token=1', initSegmentData)
-          .setResponseValue('test:/host/segment.mp4?token=1', segmentData);
+          .setResponseValue('test:/hls_test/segments/segment.mp4?token=1',
+              segmentData);
 
       const actual =
           await parser.start('test:/host/master.m3u8', playerInterface);
@@ -5265,11 +5271,11 @@ describe('HlsParser', () => {
       // flow has gone well.
       const videoReference = Array.from(video.segmentIndex)[0];
       expect(videoReference.getUris())
-          .toEqual(['test:/host/segment.mp4?token=1']);
+          .toEqual(['test:/hls_test/segments/segment.mp4?token=1']);
 
       const audioReference = Array.from(audio.segmentIndex)[0];
       expect(audioReference.getUris())
-          .toEqual(['test:/host/segment.mp4?token=1']);
+          .toEqual(['test:/hls_test/segments/segment.mp4?token=1']);
     });
   });
 
@@ -5564,7 +5570,6 @@ describe('HlsParser', () => {
     const media = [
       '#EXTM3U\n',
       '#EXT-X-PLAYLIST-TYPE:VOD\n',
-      '#EXT-X-MAP:URI="init.test",BYTERANGE="616@0"\n',
       '#EXTINF:5,\n',
       '#EXT-X-BYTERANGE:121090@616\n',
       'main.test',
@@ -5875,6 +5880,36 @@ describe('HlsParser', () => {
     expect(video.height).toBe(110);
   });
 
+  it('supports redirect', async () => {
+    const mediaPlaylist = [
+      '#EXTM3U\n',
+      '#EXT-X-TARGETDURATION:5\n',
+      '#EXTINF:5,\n',
+      'video1.ts\n',
+    ].join('');
+
+    fakeNetEngine
+        .setResponseText('test:/master', mediaPlaylist)
+        .setResponseValue('test:/redirected/video1.ts', tsSegmentData)
+        .setResponseFilter((type, response) => {
+          // Simulate a redirect by changing the response URI.
+          if (response.uri == 'test:/master') {
+            response.uri = 'test:/redirected/master';
+          }
+        });
+
+    const actualManifest = await parser.start('test:/master', playerInterface);
+    expect(actualManifest.variants.length).toBe(1);
+
+    const video = actualManifest.variants[0].video;
+    await video.createSegmentIndex();
+    goog.asserts.assert(video.segmentIndex, 'Null segmentIndex!');
+    const videoSegment0 = Array.from(video.segmentIndex)[0];
+    const videoUri0 = videoSegment0.getUris()[0];
+
+    expect(videoUri0).toBe('test:/redirected/video1.ts');
+  });
+
   it('supports ContentSteering', async () => {
     const master = [
       '#EXTM3U\n',
@@ -6057,42 +6092,6 @@ describe('HlsParser', () => {
       ];
       expect(onMetadataSpy).toHaveBeenCalledTimes(1);
       expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 5, values);
-    });
-
-    it('skip duplicate IDs', async () => {
-      const mediaPlaylist = [
-        '#EXTM3U\n',
-        '#EXT-X-TARGETDURATION:5\n',
-        '#EXT-X-PROGRAM-DATE-TIME:2000-01-01T00:00:00.00Z\n',
-        '#EXTINF:5,\n',
-        'video1.ts\n',
-        '#EXT-X-DATERANGE:ID="0",START-DATE="2000-01-01T00:00:00.00Z",',
-        'DURATION=1,X-SHAKA="FOREVER"\n',
-        '#EXT-X-DATERANGE:ID="0",START-DATE="2000-01-01T00:00:00.00Z",',
-        'DURATION=1,X-SHAKA="FOREVER"\n',
-        '#EXT-X-DATERANGE:ID="0",START-DATE="2000-01-01T00:00:00.00Z",',
-        'DURATION=1,X-SHAKA="FOREVER"\n',
-      ].join('');
-
-      fakeNetEngine
-          .setResponseText('test:/master', mediaPlaylist)
-          .setResponseValue('test:/video1.ts', tsSegmentData);
-
-      await parser.start('test:/master', playerInterface);
-
-      const metadataType = 'com.apple.quicktime.HLS';
-      const values = [
-        jasmine.objectContaining({
-          key: 'ID',
-          data: '0',
-        }),
-        jasmine.objectContaining({
-          key: 'X-SHAKA',
-          data: 'FOREVER',
-        }),
-      ];
-      expect(onMetadataSpy).toHaveBeenCalledTimes(1);
-      expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 1, values);
     });
 
     it('with no EXT-X-PROGRAM-DATE-TIME', async () => {
@@ -6284,6 +6283,43 @@ describe('HlsParser', () => {
 
     const video2 = manifest.variants[1] && manifest.variants[1].video;
     expect(video2.codecs).toBe('dav1.10.01');
+  });
+
+  it('supports SUPPLEMENTAL-CODECS with muxed audio', async () => {
+    const master = [
+      '#EXTM3U\n',
+      '#EXT-X-STREAM-INF:BANDWIDTH=550702,AVERAGE-BANDWIDTH=577484,',
+      'CODECS="av01.0.04M.10.0.111.09.16.09.0,mp4a.40.2",',
+      'SUPPLEMENTAL-CODECS="dav1.10.01/db1p",',
+      'RESOLUTION=640x360,FRAME-RATE=59.940,VIDEO-RANGE=PQ,',
+      'CLOSED-CAPTIONS=NONE\n',
+      'video',
+    ].join('');
+
+    const media = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXTINF:5,\n',
+      '#EXT-X-BYTERANGE:121090@616\n',
+      'main.mp4',
+    ].join('');
+
+    fakeNetEngine
+        .setResponseText('test:/master', master)
+        .setResponseText('test:/video', media);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('test:/master', playerInterface);
+
+    expect(manifest.variants.length).toBe(2);
+    expect(manifest.textStreams.length).toBe(0);
+
+    const video1 = manifest.variants[0] && manifest.variants[0].video;
+    expect(video1.codecs).toBe('av01.0.04M.10.0.111.09.16.09.0,mp4a.40.2');
+
+    const video2 = manifest.variants[1] && manifest.variants[1].video;
+    expect(video2.codecs).toBe('dav1.10.01,mp4a.40.2');
   });
 
   it('ignore SUPPLEMENTAL-CODECS by config', async () => {

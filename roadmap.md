@@ -17,13 +17,25 @@ Candidate features for future release cycles:
 
 v5.0
  - Conversion to Typescript (Smaller, more modular binary)
- - Remove shaka.cast APIs, have UI talk directly to generic receivers
-   https://github.com/shaka-project/shaka-player/issues/4214
 
-v4.15 - 2025 Q2
-  TBD
+v4.16 - 2025 Q3
+ - CMCDv2
+   https://github.com/shaka-project/shaka-player/issues/8660
+ - HDR detection in Tizen and WebOS
+   https://github.com/shaka-project/shaka-player/issues/8441
 
 =====
+
+v4.15 - 2025 Q2
+ - Modernization of the UI
+   https://github.com/shaka-project/shaka-player/issues/8406
+ - Ability to pass in a Date object for playback start time
+   https://github.com/shaka-project/shaka-player/issues/8402
+ - New API for video: `getVideoTracks` and `selectVideoTrack`
+ - New NativeTextDisplayer to allow selecting subtitles via native API and controls
+ - UI: Support thumbnails while casting
+ - Transfer side-loaded text/thumbnail/chapter tracks when casting
+ - New API: Queue Manager
 
 v4.14 - 2025 Q1
  - Time ID3, emsg, and metadata events to the presentation timeline

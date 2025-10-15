@@ -87,6 +87,7 @@ shakaDemo.Config = class {
     this.addOfflineSection_();
     this.addDrmSection_();
     this.addStreamingSection_();
+    this.addNetworkingSection_();
     this.addMediaSourceSection_();
     this.addManifestSection_();
     this.addDashManifestSection_();
@@ -99,6 +100,7 @@ shakaDemo.Config = class {
     this.addCmsdSection_();
     this.addLcevcSection_();
     this.addAdsSection_();
+    this.addQueueManagerSection_();
   }
 
   /**
@@ -342,7 +344,9 @@ shakaDemo.Config = class {
             /* canBeDecimal= */ true,
             /* canBeZero= */ true)
         .addBoolInput_('Prefer Network Information bandwidth',
-            'abr.preferNetworkInformationBandwidth');
+            'abr.preferNetworkInformationBandwidth')
+        .addBoolInput_('Remove latency from first packet time',
+            'abr.removeLatencyFromFirstPacketTime');
     this.addRestrictionsSection_('abr', 'Adaptation Restrictions');
   }
 
@@ -392,7 +396,8 @@ shakaDemo.Config = class {
         .addBoolInput_('LCEVC Dynamic Performance scaling',
             'lcevc.dynamicPerformanceScaling')
         .addNumberInput_('LCEVC Log Level', 'lcevc.logLevel')
-        .addBoolInput_('Draw LCEVC Logo', 'lcevc.drawLogo');
+        .addBoolInput_('Draw LCEVC Logo', 'lcevc.drawLogo')
+        .addBoolInput_('Enable LCEVC Poster', 'lcevc.poster');
   }
 
   /** @private */
@@ -408,7 +413,32 @@ shakaDemo.Config = class {
         .addBoolInput_('Ignore HLS Interstitial',
             'ads.disableHLSInterstitial')
         .addBoolInput_('Ignore DASH Interstitial',
-            'ads.disableDASHInterstitial');
+            'ads.disableDASHInterstitial')
+        .addBoolInput_('Allow preload on DOM elements',
+            'ads.allowPreloadOnDomElements')
+        .addBoolInput_('Allow start in the middle of an interstitial',
+            'ads.allowStartInMiddleOfInterstitial');
+  }
+
+  /** @private */
+  addQueueManagerSection_() {
+    const repeatModeOptions = shaka.config.RepeatMode;
+    const repeatModeOptionNames = {
+      'OFF': 'Off',
+      'ALL': 'All',
+      'SINGLE': 'Single',
+    };
+
+    const docLink = this.resolveExternLink_('.QueueConfiguration');
+    this.addSection_('Queue Manager', docLink)
+        .addNumberInput_('Time window at end to preload next Queue item',
+            'queue.preloadNextUrlWindow',
+            /* canBeDecimal= */ true,
+            /* canBeZero= */ true)
+        .addSelectInput_('Repeat mode',
+            'queue.repeatMode',
+            repeatModeOptions,
+            repeatModeOptionNames);
   }
 
   /**
@@ -505,10 +535,6 @@ shakaDemo.Config = class {
             'streaming.inaccurateManifestTolerance',
             /* canBeDecimal= */ true)
         .addBoolInput_('Low Latency Mode', 'streaming.lowLatencyMode')
-        .addBoolInput_('Force HTTP', 'streaming.forceHTTP')
-        .addBoolInput_('Force HTTPS', 'streaming.forceHTTPS')
-        .addNumberInput_('Min bytes for progress events',
-            'streaming.minBytesForProgressEvents')
         .addBoolInput_('Prefer native DASH playback when available',
             'streaming.preferNativeDash')
         .addBoolInput_('Prefer native HLS playback when available',
@@ -597,6 +623,7 @@ shakaDemo.Config = class {
       'KEEP': 'Keep',
       'RESET': 'Reset',
       'RESET_TO_ENCRYPTED': 'Reset to encrypted',
+      'RESET_ON_ENCRYPTION_CHANGE': 'Reset on encryption change',
     };
 
     this.addBoolInput_('Start At Segment Boundary',
@@ -621,7 +648,10 @@ shakaDemo.Config = class {
             'streaming.avoidEvictionOnQuotaExceededError')
         .addSelectInput_('Cross Boundary Strategy',
             'streaming.crossBoundaryStrategy',
-            strategyOptions, strategyOptionsNames);
+            strategyOptions, strategyOptionsNames)
+        .addBoolInput_(
+            'Return to end of live window when outside of live window',
+            'streaming.returnToEndOfLiveWindowWhenOutside');
     this.addRetrySection_('streaming', 'Streaming Retry Parameters');
     this.addLiveSyncSection_();
   }
@@ -666,6 +696,16 @@ shakaDemo.Config = class {
   }
 
   /** @private */
+  addNetworkingSection_() {
+    const docLink = this.resolveExternLink_('.NetworkingConfiguration');
+    this.addSection_('Networking', docLink)
+        .addBoolInput_('Force HTTP', 'networking.forceHTTP')
+        .addBoolInput_('Force HTTPS', 'networking.forceHTTPS')
+        .addNumberInput_('Min bytes for progress events',
+            'networking.minBytesForProgressEvents');
+  }
+
+  /** @private */
   addMediaSourceSection_() {
     const docLink = this.resolveExternLink_('.MediaSourceConfiguration');
 
@@ -679,13 +719,19 @@ shakaDemo.Config = class {
         .addBoolInput_('Force Transmux', 'mediaSource.forceTransmux')
         .addBoolInput_('Insert fake encryption in init segments when needed ' +
             'by the platform.', 'mediaSource.insertFakeEncryptionInInit')
+        .addBoolInput_('Force enca.ChannelCount to 2 for EC-3 audio if ' +
+          'needed by the platform.', 'mediaSource.correctEc3Enca')
         .addSelectInput_(
             'Codec Switching Strategy',
             'mediaSource.codecSwitchingStrategy',
             strategyOptions,
             strategyOptionsNames)
         .addBoolInput_('Dispatch all emsg boxes',
-            'mediaSource.dispatchAllEmsgBoxes');
+            'mediaSource.dispatchAllEmsgBoxes')
+        .addBoolInput_('Uses source elements',
+            'mediaSource.useSourceElements')
+        .addBoolInput_('Expect updateEnd when duration is truncated',
+            'mediaSource.durationReductionEmitsUpdateEnd');
   }
 
   /** @private */

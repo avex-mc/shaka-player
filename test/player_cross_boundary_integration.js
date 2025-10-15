@@ -68,7 +68,8 @@ describe('Player Cross Boundary', () => {
 
       // PlayReady on Chromecast is deprecated, so we prefer to use the DRM
       // that is officially supported.
-      if (shaka.util.Platform.isChromecast()) {
+      if (deviceDetected.getDeviceType() ===
+          shaka.device.IDevice.DeviceType.CAST) {
         player.configure({
           drm: {
             preferredKeySystems: ['com.widevine.alpha'],
@@ -78,8 +79,7 @@ describe('Player Cross Boundary', () => {
     });
 
     drmIt('should reset MSE when crossing a boundary', async () => {
-      if (!shakaSupport.drm['com.widevine.alpha'] &&
-          !shakaSupport.drm['com.microsoft.playready']) {
+      if (!checkTrueDrmSupport()) {
         pending('Needed DRM is not supported on this platform');
       }
 
@@ -94,8 +94,7 @@ describe('Player Cross Boundary', () => {
     });
 
     drmIt('should buffer no further than boundary', async () => {
-      if (!shakaSupport.drm['com.widevine.alpha'] &&
-          !shakaSupport.drm['com.microsoft.playready']) {
+      if (!checkTrueDrmSupport()) {
         pending('Needed DRM is not supported on this platform');
       }
 
@@ -115,8 +114,7 @@ describe('Player Cross Boundary', () => {
     });
 
     drmIt('should skip MSE reset from encrypted boundary', async () => {
-      if (!shakaSupport.drm['com.widevine.alpha'] &&
-          !shakaSupport.drm['com.microsoft.playready']) {
+      if (!checkTrueDrmSupport()) {
         pending('Needed DRM is not supported on this platform');
       }
 

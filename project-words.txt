@@ -1,14 +1,20 @@
 # events / html
 abrstatuschanged
 adblocker
+audiofocuspaused
+audiofocusgranted
+audiofocuslost
 audiolang
 audiotrackchange
 audiotrackchanged
 audiotrackschanged
 autoplaying
 boundarycrossed
+canupdatestarttime
 captionselectionupdated
 caststatuschanged
+clearlead
+currentitemchanged
 customwarning
 defaultselected
 describedby
@@ -23,6 +29,9 @@ expirationupdated
 firstquartile
 fontfaceonload
 gapjumped
+hidingui
+itemsinserted
+itemsremoved
 keyadded
 keymessage
 keystatuschanged
@@ -34,6 +43,7 @@ manifestparsed
 manifestupdated
 mediaqualitychanged
 mediasourcerecovered
+metadataadded
 mozfullscreenchange
 mozfullscreenerror
 nativecontrols
@@ -58,6 +68,7 @@ seekforward
 seekto
 segmentappended
 selectcomplete
+showingui
 spacebar
 stalldetected
 startstreaming
@@ -173,6 +184,7 @@ Clearkey
 Clearkeys
 Clutz
 codem
+hbbtv
 Conax
 cvox
 expressjs
@@ -280,11 +292,13 @@ latm
 laurl
 lcevc
 libav
+liblcevc
 linears
 loas
 lpcm
 lrtb
 luma
+mainenhance
 mcap
 mdat
 mdats

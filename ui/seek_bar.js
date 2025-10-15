@@ -9,7 +9,6 @@ goog.provide('shaka.ui.SeekBar');
 
 goog.require('shaka.ads.Utils');
 goog.require('shaka.net.NetworkingEngine');
-goog.require('shaka.ui.Constants');
 goog.require('shaka.ui.Locales');
 goog.require('shaka.ui.Localization');
 goog.require('shaka.ui.RangeElement');
@@ -106,11 +105,17 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     this.thumbnailImage_.draggable = false;
 
     /** @private {!HTMLElement} */
+    this.thumbnailTimeContainer_ = shaka.util.Dom.createHTMLElement('div');
+    this.thumbnailTimeContainer_.id =
+        'shaka-player-ui-thumbnail-time-container';
+
+    /** @private {!HTMLElement} */
     this.thumbnailTime_ = shaka.util.Dom.createHTMLElement('div');
     this.thumbnailTime_.id = 'shaka-player-ui-thumbnail-time';
+    this.thumbnailTimeContainer_.appendChild(this.thumbnailTime_);
 
     this.thumbnailContainer_.appendChild(this.thumbnailImage_);
-    this.thumbnailContainer_.appendChild(this.thumbnailTime_);
+    this.thumbnailContainer_.appendChild(this.thumbnailTimeContainer_);
     this.container.appendChild(this.thumbnailContainer_);
 
     this.timeContainer_ = shaka.util.Dom.createHTMLElement('div');
@@ -192,11 +197,11 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
       const min = parseFloat(this.bar.min);
       const max = parseFloat(this.bar.max);
       // Pixels from the left of the range element
-      const mousePosition = event.clientX - rect.left;
+      const mousePosition = Math.max(0, event.clientX - rect.left);
       // Pixels per unit value of the range element.
       const scale = (max - min) / rect.width;
       // Mouse position in units, which may be outside the allowed range.
-      const value = Math.round(min + scale * mousePosition);
+      const value = Math.min(max, Math.round(min + scale * mousePosition));
       if (!this.player.getImageTracks().length) {
         this.hideThumbnail_();
         this.showTime_(mousePosition, value);
@@ -340,39 +345,35 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     } else {
       shaka.ui.Utils.setDisplay(this.container, true);
 
-      if (bufferedLength == 0) {
-        this.container.style.background = colors.base;
-      } else {
-        const clampedBufferStart = Math.max(bufferedStart, seekRange.start);
-        const clampedBufferEnd = Math.min(bufferedEnd, seekRange.end);
-        const clampedCurrentTime = Math.min(
-            Math.max(currentTime, seekRange.start),
-            seekRange.end);
+      const clampedBufferStart = Math.max(bufferedStart, seekRange.start);
+      const clampedBufferEnd = Math.min(bufferedEnd, seekRange.end);
+      const clampedCurrentTime = Math.min(
+          Math.max(currentTime, seekRange.start),
+          seekRange.end);
 
-        const bufferStartDistance = clampedBufferStart - seekRange.start;
-        const bufferEndDistance = clampedBufferEnd - seekRange.start;
-        const playheadDistance = clampedCurrentTime - seekRange.start;
+      const bufferStartDistance = clampedBufferStart - seekRange.start;
+      const bufferEndDistance = clampedBufferEnd - seekRange.start;
+      const playheadDistance = clampedCurrentTime - seekRange.start;
 
-        // NOTE: the fallback to zero eliminates NaN.
-        const bufferStartFraction = (bufferStartDistance / seekRangeSize) || 0;
-        const bufferEndFraction = (bufferEndDistance / seekRangeSize) || 0;
-        const playheadFraction = (playheadDistance / seekRangeSize) || 0;
+      // NOTE: the fallback to zero eliminates NaN.
+      const bufferStartFraction = (bufferStartDistance / seekRangeSize) || 0;
+      const bufferEndFraction = (bufferEndDistance / seekRangeSize) || 0;
+      const playheadFraction = (playheadDistance / seekRangeSize) || 0;
 
-        const unbufferedColor =
-            this.config_.showUnbufferedStart ? colors.base : colors.played;
+      const unbufferedColor =
+          this.config_.showUnbufferedStart ? colors.base : colors.played;
 
-        const gradient = [
-          'to right',
-          this.makeColor_(unbufferedColor, bufferStartFraction),
-          this.makeColor_(colors.played, bufferStartFraction),
-          this.makeColor_(colors.played, playheadFraction),
-          this.makeColor_(colors.buffered, playheadFraction),
-          this.makeColor_(colors.buffered, bufferEndFraction),
-          this.makeColor_(colors.base, bufferEndFraction),
-        ];
-        this.container.style.background =
-            'linear-gradient(' + gradient.join(',') + ')';
-      }
+      const gradient = [
+        'to right',
+        this.makeColor_(unbufferedColor, bufferStartFraction),
+        this.makeColor_(colors.played, bufferStartFraction),
+        this.makeColor_(colors.played, playheadFraction),
+        this.makeColor_(colors.buffered, playheadFraction),
+        this.makeColor_(colors.buffered, bufferEndFraction),
+        this.makeColor_(colors.base, bufferEndFraction),
+      ];
+      this.container.style.background =
+          'linear-gradient(' + gradient.join(',') + ')';
     }
   }
 
@@ -460,7 +461,7 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
       const seekRange = this.player.seekRange();
       const seekRangeSize = seekRange.end - seekRange.start;
       const minSeekBarWindow =
-          shaka.ui.Constants.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR;
+          shaka.ui.SeekBar.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR_;
       // Seek range keeps changing for live content and some of the known
       // ad breaks might not be in the seek range now, but get into
       // it later.
@@ -489,7 +490,7 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     const seekRangeSize = seekRange.end - seekRange.start;
 
     if (this.player.isLive() &&
-        (seekRangeSize < shaka.ui.Constants.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR ||
+        (seekRangeSize < shaka.ui.SeekBar.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR_ ||
         !isFinite(seekRangeSize))) {
       return false;
     }
@@ -544,12 +545,6 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     const seekRange = this.player.seekRange();
     const playerValue = Math.max(Math.ceil(seekRange.start),
         Math.min(Math.floor(seekRange.end), value));
-    const thumbnail =
-        await this.player.getThumbnails(/* trackId= */ null, playerValue);
-    if (!thumbnail || !thumbnail.uris.length) {
-      this.hideThumbnail_();
-      return;
-    }
     if (this.player.isLive()) {
       const totalSeconds = seekRange.end - value;
       if (totalSeconds < 1) {
@@ -561,6 +556,18 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
       }
     } else {
       this.thumbnailTime_.textContent = this.timeFormatter_(value);
+    }
+    const thumbnail =
+        await this.player.getThumbnails(/* trackId= */ null, playerValue);
+    if (!thumbnail || !thumbnail.uris || !thumbnail.uris.length) {
+      this.hideThumbnail_();
+      this.showTime_(pixelPosition, value);
+      return;
+    }
+    if (thumbnail.width < thumbnail.height) {
+      this.thumbnailContainer_.classList.add('portrait-thumbnail');
+    } else {
+      this.thumbnailContainer_.classList.remove('portrait-thumbnail');
     }
     const offsetTop = -10;
     const width = this.thumbnailContainer_.clientWidth;
@@ -574,10 +581,8 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     let uri = thumbnail.uris[0].split('#xywh=')[0];
     if (!this.lastThumbnail_ ||
         uri !== this.lastThumbnail_.uris[0].split('#xywh=')[0] ||
-        thumbnail.segment.getStartByte() !=
-            this.lastThumbnail_.segment.getStartByte() ||
-        thumbnail.segment.getEndByte() !=
-            this.lastThumbnail_.segment.getEndByte()) {
+        thumbnail.startByte != this.lastThumbnail_.startByte ||
+        thumbnail.endByte != this.lastThumbnail_.endByte) {
       this.lastThumbnail_ = thumbnail;
       if (this.lastThumbnailPendingRequest_) {
         this.lastThumbnailPendingRequest_.abort();
@@ -590,9 +595,9 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
           const type =
               shaka.net.NetworkingEngine.AdvancedRequestType.MEDIA_SEGMENT;
           const request = shaka.util.Networking.createSegmentRequest(
-              thumbnail.segment.getUris(),
-              thumbnail.segment.getStartByte(),
-              thumbnail.segment.getEndByte(),
+              thumbnail.uris,
+              thumbnail.startByte,
+              thumbnail.endByte,
               this.player.getConfiguration().streaming.retryParameters);
           this.lastThumbnailPendingRequest_ = this.player.getNetworkingEngine()
               .request(requestType, request, {type});
@@ -665,7 +670,6 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
    */
   hideThumbnail_() {
     this.thumbnailContainer_.style.visibility = 'hidden';
-    this.thumbnailTime_.textContent = '';
   }
 
 
@@ -707,6 +711,13 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
  */
 shaka.ui.SeekBar.Transparent_Image_ =
     'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
+
+
+/**
+ * @const {number}
+ * @private
+ */
+shaka.ui.SeekBar.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR_ = 5; // seconds
 
 
 /**
