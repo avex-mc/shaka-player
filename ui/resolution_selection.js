@@ -413,7 +413,10 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
           () => this.onVideoTrackSelected_(track));
 
       const span = shaka.util.Dom.createHTMLElement('span');
-      if (track.height && track.width) {
+      // Use displayName if available, otherwise fall back to resolution label
+      if (track.displayName) {
+        span.textContent = track.displayName;
+      } else if (track.height && track.width) {
         span.textContent = this.getResolutionLabel_(track, tracks);
       } else if (track.bandwidth) {
         span.textContent = this.getTextFromBandwidth_(track.bandwidth);

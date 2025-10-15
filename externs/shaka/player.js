@@ -564,6 +564,7 @@ shaka.extern.TextTrack;
  *   codecs: ?string,
  *   roles: !Array<string>,
  *   label: ?string,
+ *   displayName: ?string,
  * }}
  *
  * @description
@@ -597,6 +598,8 @@ shaka.extern.TextTrack;
  *   The roles of the track, e.g. <code>'main'</code>, <code>'sign'</code>.
  * @property {?string} label
  *   The track label, which is unique text that should describe the track.
+ * @property {?string} displayName
+ *   Custom display name from manifest (e.g., HLS DISPLAY-NAME attribute).
  * @exportDoc
  */
 shaka.extern.VideoTrack;
