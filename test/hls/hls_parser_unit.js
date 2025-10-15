@@ -3168,7 +3168,7 @@ describe('HlsParser', () => {
      * @param {string} media
      * @param {!Array<number>} startTimes
      * @param {number} syncTimeOffset
-     * @param {(function(!shaka.media.SegmentReference))=} modifyFn
+     * @param {(function(!shaka.media.SegmentReference, !number))=} modifyFn
      * @param {boolean=} isLowLatency
      */
     async function test(media, startTimes, syncTimeOffset, modifyFn,
@@ -3187,7 +3187,7 @@ describe('HlsParser', () => {
         const reference = makeReference(
             startTime, endTime, syncTimeOffset + startTime);
         if (modifyFn) {
-          modifyFn(reference);
+          modifyFn(reference, i);
         }
         segments.push(reference);
       }
@@ -3285,6 +3285,74 @@ describe('HlsParser', () => {
         'main.mp4',
       ].join(''), [0, 5, 10, 15, 20, 25], syncTimeBase + 5, (reference) => {
         reference.syncTime = null;
+      });
+    });
+
+    it('when there is a discontinuity and a PDT jump, without a gap',
+        async () => {
+          const config =
+              shaka.util.PlayerConfiguration.createDefault().manifest;
+          parser.configure(config);
+          await test([
+            '#EXTM3U\n',
+            '#EXT-X-PLAYLIST-TYPE:VOD\n',
+            '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+            '#EXT-X-PROGRAM-DATE-TIME:2000-01-01T00:00:05.00Z\n',
+            '#EXTINF:5,\n',
+            'main.mp4\n',
+            '#EXTINF:5,\n',
+            'main.mp4\n',
+            '#EXT-X-DISCONTINUITY\n',
+            '#EXT-X-PROGRAM-DATE-TIME:2000-01-01T00:00:20.00Z\n',
+            '#EXTINF:5,\n',
+            'main.mp4\n',
+            '#EXTINF:5,\n',
+            'main.mp4\n',
+            '#EXTINF:5,\n',
+            'main.mp4',
+          ].join(''), [0, 5, 10, 15, 20, 25], syncTimeBase + 5,
+          (reference, i) => {
+            if (i == 1) {
+              reference.endTime = 10;
+              reference.trueEndTime = 10;
+            }
+            if (i > 1) {
+              reference.discontinuitySequence = 0;
+            }
+            if (!reference.initSegmentReference.boundaryEnd) {
+              reference.initSegmentReference.boundaryEnd = 10;
+            }
+          });
+        });
+
+    it('and does not create a gap if there is a PDT jump without a ' +
+      'discontinuity',
+    async () => {
+      const config =
+          shaka.util.PlayerConfiguration.createDefault().manifest;
+      parser.configure(config);
+      await test([
+        '#EXTM3U\n',
+        '#EXT-X-PLAYLIST-TYPE:VOD\n',
+        '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+        '#EXT-X-PROGRAM-DATE-TIME:2000-01-01T00:00:05.00Z\n',
+        '#EXTINF:5,\n',
+        'main.mp4\n',
+        '#EXTINF:5,\n',
+        'main.mp4\n',
+        '#EXT-X-PROGRAM-DATE-TIME:2000-01-01T00:00:20.00Z\n',
+        '#EXTINF:5,\n',
+        'main.mp4\n',
+        '#EXTINF:5,\n',
+        'main.mp4\n',
+        '#EXTINF:5,\n',
+        'main.mp4',
+      ].join(''), [0, 5, 10, 15, 20, 25], syncTimeBase + 5,
+      (reference, i) => {
+        if (i == 1) {
+          reference.endTime = 10;
+          reference.trueEndTime = 10;
+        }
       });
     });
 
@@ -3578,6 +3646,51 @@ describe('HlsParser', () => {
     expect(secondInitSegment.getUris()[0]).toBe('test:/init2.mp4');
     expect(secondInitSegment.startByte).toBe(0);
     expect(secondInitSegment.endByte).toBe(615);
+  });
+
+  it('handles mimetype change', async () => {
+    const master = [
+      '#EXTM3U',
+      '#EXT-X-STREAM-INF:BANDWIDTH=200,CODECS="avc1"',
+      'video',
+    ].join('\n');
+
+    const media = [
+      '#EXTM3U',
+      '#EXT-X-PLAYLIST-TYPE:VOD',
+      '#EXT-X-TARGETDURATION:5',
+      '#EXT-X-MAP:URI="init.mp4"',
+      '#EXTINF:5,',
+      'main.mp4', // First segment is mp4
+      '#EXTINF:5,',
+      'main.ts',  // Second segment is ts
+    ].join('\n');
+
+    fakeNetEngine
+        .setResponseText('test:/master', master)
+        .setResponseText('test:/video', media)
+        .setResponseValue('test:/init.mp4', initSegmentData)
+        .setResponseValue('test:/main.mp4', segmentData)
+        .setResponseValue('test:/main.ts', tsSegmentData);
+
+    const manifest = await parser.start('test:/master', playerInterface);
+    await loadAllStreamsFor(manifest);
+
+    const video = manifest.variants[0].video;
+    goog.asserts.assert(video.segmentIndex, 'Segment index should exist!');
+
+    const references = Array.from(video.segmentIndex);
+    expect(references.length).toBe(2);
+
+    const mp4Segment = references[0];
+    const tsSegment = references[1];
+
+    expect(mp4Segment.mimeType).toBe('video/mp4');
+    expect(mp4Segment.initSegmentReference).not.toBeNull();
+
+    expect(tsSegment.mimeType).toBe('video/mp2t');
+    // For TS content, the initSegmentReference should be nulled out correctly.
+    expect(tsSegment.initSegmentReference).toBeNull();
   });
 
   it('parses variants encrypted with AES-128', async () => {
@@ -5529,22 +5642,17 @@ describe('HlsParser', () => {
     const media = [
       '#EXTM3U\n',
       '#EXT-X-PLAYLIST-TYPE:VOD\n',
-      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXT-X-MAP:URI="init.mp4"\n',
       '#EXTINF:5,\n',
-      '#EXT-X-BYTERANGE:121090@616\n',
       '#EXT-X-BITRATE:385\n',
       'main.mp4\n',
       '#EXTINF:5,\n',
-      '#EXT-X-BYTERANGE:121090@616\n',
       'main.mp4\n',
       '#EXTINF:5,\n',
-      '#EXT-X-BYTERANGE:121090@616\n',
       'main.mp4\n',
       '#EXTINF:5,\n',
-      '#EXT-X-BYTERANGE:121090@616\n',
       '#EXT-X-BITRATE:340\n',
       'main.mp4\n',
-      '#EXT-X-BYTERANGE:121090@616\n',
       '#EXTINF:5,\n',
       '#EXT-X-BITRATE:300\n',
       'main.mp4',
