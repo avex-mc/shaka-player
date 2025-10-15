@@ -455,8 +455,8 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
    * @private
    */
   onAdCuePointsChanged_() {
-    this.markAdBreaks_();
     const action = () => {
+      this.markAdBreaks_();
       const seekRange = this.player.seekRange();
       const seekRangeSize = seekRange.end - seekRange.start;
       const minSeekBarWindow =
@@ -489,7 +489,8 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
     const seekRangeSize = seekRange.end - seekRange.start;
 
     if (this.player.isLive() &&
-        seekRangeSize < shaka.ui.Constants.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR) {
+        (seekRangeSize < shaka.ui.Constants.MIN_SEEK_WINDOW_TO_SHOW_SEEKBAR ||
+        !isFinite(seekRangeSize))) {
       return false;
     }
 
@@ -513,8 +514,8 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
         Math.max(0, pixelPosition - (width / 2)));
     this.timeContainer_.style.left = leftPosition + 'px';
     this.timeContainer_.style.visibility = 'visible';
+    const seekRange = this.player.seekRange();
     if (this.player.isLive()) {
-      const seekRange = this.player.seekRange();
       const totalSeconds = seekRange.end - value;
       if (totalSeconds < 1) {
         this.timeContainer_.textContent =
@@ -524,7 +525,8 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
             '-' + this.timeFormatter_(totalSeconds);
       }
     } else {
-      this.timeContainer_.textContent = this.timeFormatter_(value);
+      const totalSeconds = value - seekRange.start;
+      this.timeContainer_.textContent = this.timeFormatter_(totalSeconds);
     }
   }
 

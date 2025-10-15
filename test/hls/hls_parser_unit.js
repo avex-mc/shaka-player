@@ -97,6 +97,7 @@ describe('HlsParser', () => {
       getBandwidthEstimate: () => 1e6,
       onMetadata: shaka.test.Util.spyFunc(onMetadataSpy),
       disableStream: (stream) => {},
+      addFont: (name, url) => {},
     };
 
     parser = new shaka.hls.HlsParser();
@@ -156,6 +157,7 @@ describe('HlsParser', () => {
   it('parses manifest attributes', async () => {
     const master = [
       '#EXTM3U\n',
+      '#EXT-X-START:TIME-OFFSET=2\n',
       '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="aud1",LANGUAGE="eng",',
       'CHANNELS="16/JOC",SAMPLE-RATE="48000",URI="audio"\n',
       '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="sub1",LANGUAGE="eng",',
@@ -187,6 +189,7 @@ describe('HlsParser', () => {
     const manifest = shaka.test.ManifestGenerator.generate((manifest) => {
       manifest.sequenceMode = sequenceMode;
       manifest.type = shaka.media.ManifestParser.HLS;
+      manifest.startTime = 2;
       manifest.anyTimeline();
       manifest.addPartialVariant((variant) => {
         variant.language = 'en';
@@ -2131,6 +2134,88 @@ describe('HlsParser', () => {
     expect(firstThumbnailReference).not.toBe(null);
     expect(secondThumbnailReference).not.toBe(null);
     expect(thirdThumbnailReference).not.toBe(null);
+  });
+
+  it('supports EXT-X-I-FRAME-STREAM-INF for trick play', async () => {
+    const master = [
+      '#EXTM3U\n',
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="sub1",LANGUAGE="eng",',
+      'URI="text"\n',
+      '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="aud1",LANGUAGE="eng",',
+      'CHANNELS="2",URI="audio"\n',
+      '#EXT-X-STREAM-INF:BANDWIDTH=200,CODECS="avc1,mp4a",',
+      'RESOLUTION=960x540,FRAME-RATE=60,AUDIO="aud1",SUBTITLES="sub1"\n',
+      'video\n',
+      '#EXT-X-I-FRAME-STREAM-INF:RESOLUTION=960x540,CODECS="avc1",',
+      'URI="iframe"\n',
+      '#EXT-X-I-FRAME-STREAM-INF:RESOLUTION=240×135,CODECS="avc1",',
+      'URI="iframeAvc"\n',
+    ].join('');
+
+    const video = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+    ].join('');
+
+    const audio = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+    ].join('');
+
+    const text = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXTINF:5,\n',
+      '#EXT-X-BYTERANGE:121090@616\n',
+      'main.vtt',
+    ].join('');
+
+    const iframe = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+      '#EXTINF:5,\n',
+      'main.mp4\n',
+    ].join('');
+
+    fakeNetEngine
+        .setResponseText('test:/master', master)
+        .setResponseText('test:/audio', audio)
+        .setResponseText('test:/video', video)
+        .setResponseText('test:/text', text)
+        .setResponseText('test:/iframe', iframe)
+        .setResponseText('test:/main.vtt', vttText)
+        .setResponseValue('test:/init.mp4', initSegmentData)
+        .setResponseValue('test:/main.mp4', segmentData);
+
+    const actual = await parser.start('test:/master', playerInterface);
+    await loadAllStreamsFor(actual);
+
+    expect(actual.textStreams.length).toBe(1);
+    expect(actual.variants.length).toBe(1);
+
+    const trickModeVideo = actual.variants[0].video.trickModeVideo;
+    expect(trickModeVideo).toBeDefined();
+    expect(trickModeVideo.width).toBe(960);
+    expect(trickModeVideo.height).toBe(540);
   });
 
   it('parse EXT-X-GAP', async () => {
@@ -5084,6 +5169,7 @@ describe('HlsParser', () => {
   it('parses media playlists directly', async () => {
     const media = [
       '#EXTM3U\n',
+      '#EXT-X-START:TIME-OFFSET=-2\n',
       '#EXT-X-PLAYLIST-TYPE:VOD\n',
       '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
       '#EXTINF:5,\n',
@@ -5094,6 +5180,7 @@ describe('HlsParser', () => {
     const manifest = shaka.test.ManifestGenerator.generate((manifest) => {
       manifest.sequenceMode = sequenceMode;
       manifest.type = shaka.media.ManifestParser.HLS;
+      manifest.startTime = -2;
       manifest.anyTimeline();
       manifest.addPartialVariant((variant) => {
         variant.addPartialStream(ContentType.VIDEO, (stream) => {
@@ -5105,6 +5192,46 @@ describe('HlsParser', () => {
     const actualManifest = await testHlsParser(media, '', manifest);
 
     expect(actualManifest.presentationTimeline.getDuration()).toBe(5);
+  });
+
+  it('throw error when no segments', async () => {
+    const media = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD',
+    ].join('');
+
+    fakeNetEngine
+        .setResponseText('test:/media', media);
+
+    const expectedError = shaka.test.Util.jasmineError(new shaka.util.Error(
+        shaka.util.Error.Severity.CRITICAL,
+        shaka.util.Error.Category.MANIFEST,
+        shaka.util.Error.Code.HLS_EMPTY_MEDIA_PLAYLIST));
+    await expectAsync(parser.start('test:/media', playerInterface))
+        .toBeRejectedWith(expectedError);
+  });
+
+  it('throw error when all segments are gap', async () => {
+    const media = [
+      '#EXTM3U\n',
+      '#EXT-X-START:TIME-OFFSET=-2\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXT-X-GAP\n',
+      '#EXTINF:5,\n',
+      '#EXT-X-BYTERANGE:121090@616\n',
+      'main.mp4',
+    ].join('');
+
+    fakeNetEngine
+        .setResponseText('test:/media', media);
+
+    const expectedError = shaka.test.Util.jasmineError(new shaka.util.Error(
+        shaka.util.Error.Severity.CRITICAL,
+        shaka.util.Error.Category.MANIFEST,
+        shaka.util.Error.Code.HLS_EMPTY_MEDIA_PLAYLIST));
+    await expectAsync(parser.start('test:/media', playerInterface))
+        .toBeRejectedWith(expectedError);
   });
 
   it('parses #EXT-X-BITRATE', async () => {
@@ -5558,26 +5685,59 @@ describe('HlsParser', () => {
       await parser.start('test:/master', playerInterface);
 
       const metadataType = 'com.apple.quicktime.HLS';
-      const value = {
-        key: 'X-SHAKA',
-        data: 'FOREVER',
-      };
-      const plannedDuration = {
-        key: 'PLANNED-DURATION',
-        data: '1',
-      };
+      const firstValues = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '0',
+        }),
+        jasmine.objectContaining({
+          key: 'X-SHAKA',
+          data: 'FOREVER',
+        }),
+      ];
+      const secondValues = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '1',
+        }),
+        jasmine.objectContaining({
+          key: 'X-SHAKA',
+          data: 'FOREVER',
+        }),
+      ];
+      const thirdValues = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '2',
+        }),
+        jasmine.objectContaining({
+          key: 'PLANNED-DURATION',
+          data: '1',
+        }),
+        jasmine.objectContaining({
+          key: 'X-SHAKA',
+          data: 'FOREVER',
+        }),
+      ];
+      const forthValues = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '3',
+        }),
+        jasmine.objectContaining({
+          key: 'X-SHAKA',
+          data: 'FOREVER',
+        }),
+      ];
       expect(onMetadataSpy).toHaveBeenCalledTimes(4);
       expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 1,
-          [jasmine.objectContaining(value)]);
+          firstValues);
       expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 5, 6,
-          [jasmine.objectContaining(value)]);
+          secondValues);
       expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 10, 11,
-          [
-            jasmine.objectContaining(plannedDuration),
-            jasmine.objectContaining(value),
-          ]);
+          thirdValues);
       expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 15, null,
-          [jasmine.objectContaining(value)]);
+          forthValues);
     });
 
     it('supports END-ON-NEXT', async () => {
@@ -5600,13 +5760,18 @@ describe('HlsParser', () => {
       await parser.start('test:/master', playerInterface);
 
       const metadataType = 'com.apple.quicktime.HLS';
-      const value = {
-        key: 'X-SHAKA',
-        data: 'FOREVER',
-      };
+      const values = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '0',
+        }),
+        jasmine.objectContaining({
+          key: 'X-SHAKA',
+          data: 'FOREVER',
+        }),
+      ];
       expect(onMetadataSpy).toHaveBeenCalledTimes(1);
-      expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 5,
-          [jasmine.objectContaining(value)]);
+      expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 5, values);
     });
 
     it('skip duplicate IDs', async () => {
@@ -5631,13 +5796,18 @@ describe('HlsParser', () => {
       await parser.start('test:/master', playerInterface);
 
       const metadataType = 'com.apple.quicktime.HLS';
-      const value = {
-        key: 'X-SHAKA',
-        data: 'FOREVER',
-      };
+      const values = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '0',
+        }),
+        jasmine.objectContaining({
+          key: 'X-SHAKA',
+          data: 'FOREVER',
+        }),
+      ];
       expect(onMetadataSpy).toHaveBeenCalledTimes(1);
-      expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 1,
-          [jasmine.objectContaining(value)]);
+      expect(onMetadataSpy).toHaveBeenCalledWith(metadataType, 0, 1, values);
     });
 
     it('with no EXT-X-PROGRAM-DATE-TIME', async () => {
@@ -5723,6 +5893,10 @@ describe('HlsParser', () => {
       const metadataType = 'com.apple.hls.interstitial';
       const values = [
         jasmine.objectContaining({
+          key: 'ID',
+          data: '1',
+        }),
+        jasmine.objectContaining({
           key: 'X-ASSET-URI',
           data: 'test:/fake',
         }),
@@ -5764,6 +5938,10 @@ describe('HlsParser', () => {
 
       const metadataType = 'com.apple.hls.interstitial';
       const values = [
+        jasmine.objectContaining({
+          key: 'ID',
+          data: '1',
+        }),
         jasmine.objectContaining({
           key: 'X-ASSET-LIST',
           data: 'test:/fake',

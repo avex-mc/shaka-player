@@ -111,6 +111,8 @@ shaka.test.ManifestGenerator.Manifest = class {
     this.gapCount = 0;
     /** @type {boolean} */
     this.isLowLatency = false;
+    /** @type {?number} */
+    this.startTime = null;
 
 
     /** @type {shaka.extern.Manifest} */
@@ -530,13 +532,25 @@ shaka.test.ManifestGenerator.Stream = class {
     }
 
     if (!isPartial) {
+      const shaka_ = manifest ? manifest.shaka_ : shaka;
+
+      /** @type {shaka.media.SegmentIndex} */
+      this.segmentIndex = shaka_.media.SegmentIndex.forSingleSegment(
+          /* startTime= */ 0, /* duration= */ 10, ['testUri']);
+
       const create =
           jasmine.createSpy('createSegmentIndex').and.callFake(() => {
+            this.segmentIndex = shaka_.media.SegmentIndex.forSingleSegment(
+                /* startTime= */ 0, /* duration= */ 10, ['testUri']);
             return Promise.resolve();
           });
-      const shaka_ = manifest ? manifest.shaka_ : shaka;
-      const segmentIndex = shaka_.media.SegmentIndex.forSingleSegment(
-          /* startTime= */ 0, /* duration= */ 10, ['testUri']);
+      const close = jasmine.createSpy('closeSegmentIndex').and.callFake(() => {
+        if (this.segmentIndex) {
+          this.segmentIndex.release();
+        }
+        this.segmentIndex = null;
+        return Promise.resolve();
+      });
 
       /** @type {?string} */
       this.originalId = null;
@@ -544,8 +558,8 @@ shaka.test.ManifestGenerator.Stream = class {
       this.groupId = null;
       /** @type {shaka.extern.CreateSegmentIndexFunction} */
       this.createSegmentIndex = shaka.test.Util.spyFunc(create);
-      /** @type {shaka.media.SegmentIndex} */
-      this.segmentIndex = segmentIndex;
+      /** @type {!function()|undefined} */
+      this.closeSegmentIndex = shaka.test.Util.spyFunc(close);
       /** @type {string} */
       this.mimeType = defaultMimeType;
       /** @type {string} */

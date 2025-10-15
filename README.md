@@ -73,6 +73,7 @@ NOTES for iOS and iPadOS:
  - Since iPadOS 13 [MediaSource Extensions][] is supported
  - Since iPadOS 17 and iOS 17.1 [ManagedMediaSource Extensions][] is supported
 
+[ManagedMediaSource Extensions]: https://www.w3.org/TR/media-source-2/#dom-managedmediasource
 
 ## Manifest format support matrix
 
@@ -139,9 +140,10 @@ HLS features supported:
  - SAMPLE-AES and SAMPLE-AES-CTR (identity) support on browsers with ClearKey support
  - Key rotation
  - Raw AAC, MP3, AC-3 and EC-3 (without an MP4 container)
- - I-frame-only playlists with mjpg codec for thumbnails
+ - I-frame-only playlists (for trick play and thumbnails)
  - #EXT-X-IMAGE-STREAM-INF for thumbnails
  - Interstitials
+ - Container change during the playback (eg: MP4 to TS, or AAC to TS)
 
 HLS features **not** supported:
  - X-SNAP attribute in interstitials
@@ -312,6 +314,9 @@ Shaka Player supports:
 - AWS MediaTailor for Client-Side
 - AWS MediaTailor for Server-Side
 - AWS MediaTailor overlays
+- HLS interstitials
+- Custom Interstitials
+- Basic support of VAST and VMAP without IMA (playback without tracking)
 
 
 ## Content Steering support

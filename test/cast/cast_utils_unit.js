@@ -33,6 +33,8 @@ describe('CastUtils', () => {
       'preload',
       'destroyAllPreloads',
       'getNonDefaultConfiguration',
+      'addFont',
+      'getFetchedPlaybackInfo',
 
       // Test helper methods (not @export'd)
       'createDrmEngine',

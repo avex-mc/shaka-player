@@ -47,9 +47,10 @@ shaka.extern.ManifestParser = class {
    * configuration changes.  Will be called at least once before start().
    *
    * @param {shaka.extern.ManifestConfiguration} config
+   * @param {(function():boolean)=} isPreloadFn
    * @exportDoc
    */
-  configure(config) {}
+  configure(config, isPreloadFn) {}
 
   /**
    * Initialize and start the parser. When |start| resolves, it should return
@@ -139,7 +140,8 @@ shaka.extern.ManifestParser = class {
  *   getBandwidthEstimate: function():number,
  *   onMetadata: function(string, number, ?number,
  *                        !Array.<shaka.extern.MetadataFrame>),
- *   disableStream: function(!shaka.extern.Stream)
+ *   disableStream: function(!shaka.extern.Stream),
+ *   addFont: function(string, string)
  * }}
  *
  * @description
@@ -184,6 +186,8 @@ shaka.extern.ManifestParser = class {
  * @property {function(!shaka.extern.Stream)} disableStream
  *   Called to temporarily disable a stream i.e. disabling all variant
  *   containing said stream.
+ * @property {function(string, string)} addFont
+ *   Called when a new font needs to be added.
  * @exportDoc
  */
 shaka.extern.ManifestParser.PlayerInterface;

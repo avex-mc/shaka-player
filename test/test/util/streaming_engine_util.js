@@ -166,6 +166,24 @@ shaka.test.StreamingEngineUtil = class {
 
     /**
      * @param {string} type
+     * @return {number}
+     */
+    const getNumReferences = (type) => {
+      let totalReferences = 0;
+      for (let i = 0; i < periodStartTimes.length; ++i) {
+        const startTime = periodStartTimes[i];
+        const nextStartTime = i < periodStartTimes.length - 1 ?
+            periodStartTimes[i + 1] :
+            presentationDuration;
+        const periodDuration = nextStartTime - startTime;
+        const numSegments = Math.ceil(periodDuration / segmentDurations[type]);
+        totalReferences += numSegments;
+      }
+      return totalReferences;
+    };
+
+    /**
+     * @param {string} type
      * @param {number} time
      * @return {?number} A segment position.
      */
@@ -324,6 +342,7 @@ shaka.test.StreamingEngineUtil = class {
       periodCount: 1,
       gapCount: 0,
       isLowLatency: false,
+      startTime: null,
     };
 
     /** @type {shaka.extern.Variant} */
@@ -369,11 +388,13 @@ shaka.test.StreamingEngineUtil = class {
       variant.audio = /** @type {shaka.extern.Stream} */(
         shaka.test.StreamingEngineUtil.createMockStream('audio', 1));
       if (secondaryAudioVariant) {
-        variant2.audio = /** @type {shaka.extern.Stream} */(
+        variant2.audio = /** @type {shaka.extern.Stream} */ (
           shaka.test.StreamingEngineUtil.createMockStream('audio', 11));
 
         const ContentType = shaka.util.ManifestParserUtils.ContentType;
         const segmentIndex = new shaka.test.FakeSegmentIndex();
+        segmentIndex.getNumReferences.and.callFake(
+            () => getNumReferences(ContentType.AUDIO));
         segmentIndex.find.and.callFake((time) => find(ContentType.AUDIO, time));
         segmentIndex.get.and.callFake((pos) => {
           return get(ContentType.AUDIO, pos,
@@ -384,6 +405,13 @@ shaka.test.StreamingEngineUtil = class {
             variant2.audio.createSegmentIndex);
         createSegmentIndexSpy.and.callFake(() => {
           variant2.audio.segmentIndex = segmentIndex;
+          return Promise.resolve();
+        });
+
+        const closeSegmentIndexSpy = Util.funcSpy(
+            /** @type {!function()} */ (variant2.audio.closeSegmentIndex));
+        closeSegmentIndexSpy.and.callFake(() => {
+          variant2.audio.segmentIndex = null;
           return Promise.resolve();
         });
       }
@@ -420,6 +448,8 @@ shaka.test.StreamingEngineUtil = class {
       }
 
       const segmentIndex = new shaka.test.FakeSegmentIndex();
+      segmentIndex.getNumReferences.and.callFake(
+          () => getNumReferences(type));
       segmentIndex.find.and.callFake((time) => find(type, time));
       segmentIndex.get.and.callFake((pos) => {
         return get(type, pos, stream.mimeType, stream.codecs);
@@ -428,6 +458,12 @@ shaka.test.StreamingEngineUtil = class {
       const createSegmentIndexSpy = Util.funcSpy(stream.createSegmentIndex);
       createSegmentIndexSpy.and.callFake(() => {
         stream.segmentIndex = segmentIndex;
+        return Promise.resolve();
+      });
+      const closeSegmentIndexSpy = Util.funcSpy(
+          /** @type {!function()} */ (stream.closeSegmentIndex));
+      closeSegmentIndexSpy.and.callFake(() => {
+        stream.segmentIndex = null;
         return Promise.resolve();
       });
     }
@@ -480,6 +516,7 @@ shaka.test.StreamingEngineUtil = class {
       originalId: id.toString(),
       groupId: null,
       createSegmentIndex: Util.spyFunc(jasmine.createSpy('createSegmentIndex')),
+      closeSegmentIndex: Util.spyFunc(jasmine.createSpy('closeSegmentIndex')),
       segmentIndex: null,
       mimeType,
       codecs,
@@ -524,6 +561,7 @@ shaka.test.StreamingEngineUtil = class {
       originalId: id.toString(),
       groupId: null,
       createSegmentIndex: Util.spyFunc(jasmine.createSpy('createSegmentIndex')),
+      closeSegmentIndex: Util.spyFunc(jasmine.createSpy('closeSegmentIndex')),
       segmentIndex: null,
       mimeType,
       codecs,
@@ -570,6 +608,7 @@ shaka.test.StreamingEngineUtil = class {
       originalId: id.toString(),
       groupId: null,
       createSegmentIndex: Util.spyFunc(jasmine.createSpy('createSegmentIndex')),
+      closeSegmentIndex: Util.spyFunc(jasmine.createSpy('closeSegmentIndex')),
       segmentIndex: null,
       mimeType,
       codecs,

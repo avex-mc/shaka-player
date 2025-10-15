@@ -990,6 +990,48 @@ describe('StreamUtils', () => {
       expect(variants[1].audio.codecs).toBe('mp4a.40.2');
     });
 
+    it('choose better codec at same bitrate and same resolution', async () => {
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.addVariant(0, (variant) => {
+          variant.addVideo(1, (stream) => {
+            stream.bandwidth = 4000000;
+            stream.size(1920, 1080);
+            stream.mime('video/mp4', 'vp9');
+          });
+        });
+        manifest.addVariant(1, (variant) => {
+          variant.addVideo(2, (stream) => {
+            stream.bandwidth = 4000000;
+            stream.size(1920, 1080);
+            stream.mime('video/mp4', 'avc1.42E01E');
+          });
+        });
+        manifest.addVariant(2, (variant) => {
+          variant.addVideo(3, (stream) => {
+            stream.bandwidth = 4000000;
+            stream.size(1920, 1080);
+            stream.mime('video/mp4', 'dvh1.05.03');
+          });
+        });
+      });
+      navigator.mediaCapabilities.decodingInfo =
+          shaka.test.Util.spyFunc(decodingInfoSpy);
+      decodingInfoSpy.and.callFake((config) => {
+        return Promise.resolve({supported: true, smooth: true});
+      });
+
+      await StreamUtils.getDecodingInfosForVariants(manifest.variants,
+          /* usePersistentLicenses= */false, /* srcEquals= */ false,
+          /* preferredKeySystems= */ []);
+
+      shaka.util.StreamUtils.chooseCodecsAndFilterManifest(manifest,
+          /* preferredVideoCodecs= */[],
+          /* preferredAudioCodecs= */[],
+          /* preferredDecodingAttributes= */[]);
+      expect(manifest.variants.length).toBe(1);
+      expect(manifest.variants[0].video.codecs).toBe('dvh1.05.03');
+    });
+
     it('chooses variants by decoding attributes', async () => {
       manifest = shaka.test.ManifestGenerator.generate((manifest) => {
         manifest.addVariant(0, (variant) => {
@@ -1058,6 +1100,40 @@ describe('StreamUtils', () => {
       variant.disabledUntilTime = 1234;
 
       expect(shaka.util.StreamUtils.isPlayable(variant)).toBe(false);
+    });
+  });
+
+  describe('overrideDolbyVisionCodecs', () => {
+    it('overrides Dolby Vision codecs', () => {
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.addVariant(0, (variant) => {
+          variant.addVideo(1, (stream) => {
+            stream.mime('video/mp4', 'dvav.05.03');
+          });
+        });
+        manifest.addVariant(2, (variant) => {
+          variant.addVideo(3, (stream) => {
+            stream.mime('video/mp4', 'dva1.05.03');
+          });
+        });
+        manifest.addVariant(4, (variant) => {
+          variant.addVideo(5, (stream) => {
+            stream.mime('video/mp4', 'dvhe.05.03');
+          });
+        });
+        manifest.addVariant(6, (variant) => {
+          variant.addVideo(7, (stream) => {
+            stream.mime('video/mp4', 'dvh1.05.03');
+          });
+        });
+      });
+
+      shaka.util.StreamUtils.overrideDolbyVisionCodecs(manifest.variants);
+
+      expect(manifest.variants[0].video.codecs).toBe('avc3.05.03');
+      expect(manifest.variants[1].video.codecs).toBe('avc1.05.03');
+      expect(manifest.variants[2].video.codecs).toBe('hev1.05.03');
+      expect(manifest.variants[3].video.codecs).toBe('hvc1.05.03');
     });
   });
 });

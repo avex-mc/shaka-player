@@ -83,6 +83,7 @@ describe('HlsParser live', () => {
       getBandwidthEstimate: () => 1e6,
       onMetadata: () => {},
       disableStream: (stream) => {},
+      addFont: (name, url) => {},
     };
 
     parser = new shaka.hls.HlsParser();
@@ -550,7 +551,7 @@ describe('HlsParser live', () => {
         async () => {
           const media = [
             '#EXTM3U\n',
-            '#EXT-X-TARGETDURATION:5\n',
+            '#EXT-X-TARGETDURATION:2\n',
             '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
             '#EXT-X-MEDIA-SEQUENCE:0\n',
             '#EXTINF:2,\n',
@@ -567,13 +568,38 @@ describe('HlsParser live', () => {
             'main.mp4\n',
           ].join('');
           const manifest = await testInitialManifest(master, media);
-          expect(manifest.presentationTimeline.getDelay()).toBe(15);
+          expect(manifest.presentationTimeline.getDelay()).toBe(6);
         });
+
+    it('sets 3 times target duration as presentation delay if not configured and clamped to the start', async () => { // eslint-disable-line max-len
+      const media = [
+        '#EXTM3U\n',
+        '#EXT-X-TARGETDURATION:2\n',
+        '#EXT-X-START:TIME-OFFSET=-4\n',
+        '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+        '#EXT-X-MEDIA-SEQUENCE:0\n',
+        '#EXTINF:2,\n',
+        'main.mp4\n',
+        '#EXTINF:2,\n',
+        'main.mp4\n',
+        '#EXTINF:2,\n',
+        'main.mp4\n',
+        '#EXTINF:2,\n',
+        'main.mp4\n',
+        '#EXTINF:2,\n',
+        'main.mp4\n',
+        '#EXTINF:2,\n',
+        'main.mp4\n',
+      ].join('');
+      const manifest = await testInitialManifest(master, media);
+      expect(manifest.presentationTimeline.getDelay()).toBe(4);
+      expect(manifest.startTime).toBe(0);
+    });
 
     it('sets 1 times target duration as presentation delay if there are not enough segments', async () => { // eslint-disable-line max-len
       const media = [
         '#EXTM3U\n',
-        '#EXT-X-TARGETDURATION:5\n',
+        '#EXT-X-TARGETDURATION:2\n',
         '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
         '#EXT-X-MEDIA-SEQUENCE:0\n',
         '#EXTINF:2,\n',
@@ -582,7 +608,7 @@ describe('HlsParser live', () => {
         'main.mp4\n',
       ].join('');
       const manifest = await testInitialManifest(master, media);
-      expect(manifest.presentationTimeline.getDelay()).toBe(5);
+      expect(manifest.presentationTimeline.getDelay()).toBe(2);
     });
 
     it('sets presentation delay if defined', async () => {
@@ -637,8 +663,7 @@ describe('HlsParser live', () => {
       }
 
       it('does not affect seek range if unset', async () => {
-        // 15 seconds is three segment durations.
-        await testWindowOverride(15);
+        await testWindowOverride(2000);
       });
 
       it('overrides default seek range if set', async () => {

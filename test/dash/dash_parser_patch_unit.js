@@ -51,6 +51,7 @@ describe('DashParser Patch', () => {
       getBandwidthEstimate: () => 1e6,
       onMetadata: () => {},
       disableStream: (stream) => {},
+      addFont: (name, url) => {},
     };
     Date.now = () => publishTime.getTime() + 10;
 
@@ -413,7 +414,7 @@ describe('DashParser Patch', () => {
       ].join('/');
       const patchText = [
         `<Patch mpdId="${mpdId}"`,
-        `    originalPublishTime="${publishTime.toUTCString()}"">`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
         `  <add sel="${xPath}" pos="after">`,
         '    <S d="1" t="1" />',
         '  </add>',
@@ -470,6 +471,252 @@ describe('DashParser Patch', () => {
         ManifestParser.makeReference('s2.mp4', 1, 2, originalUri),
         ManifestParser.makeReference('s3.mp4', 2, 3, originalUri),
       ]);
+    });
+
+    it('modify @r attribute of an S element with @t=', async () => {
+      const xPath = '/' + [
+        'MPD',
+        'Period[@id=\'1\']',
+        'AdaptationSet[@id=\'1\']',
+        'Representation[@id=\'3\']',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S',
+      ].join('/');
+      const patchText = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <add sel="${xPath}" pos="after">`,
+        '    <S d="3" t="1" />',
+        '  </add>',
+        '</Patch>',
+      ].join('\n');
+
+      const xPath2 = '/' + [
+        'MPD',
+        'Period[@id=\'1\']',
+        'AdaptationSet[@id=\'1\']',
+        'Representation[@id=\'3\']',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S',
+      ].join('/');
+      const patchText2 = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <add sel="${xPath2}" pos="after">`,
+        '    <S d="3" t="4" />',
+        '  </add>',
+        '</Patch>',
+      ].join('\n');
+
+      const xPath3 = '/' + [
+        'MPD',
+        'Period[@id=&#39;1&#39;]',
+        'AdaptationSet[@id=&#39;1&#39;]',
+        'Representation[@id=&#39;3&#39;]',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S[@t=&#39;4&#39;]/@r',
+      ].join('/');
+      const patchText3 = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <replace sel="${xPath3}">`,
+        '    1',
+        '  </replace>',
+        '</Patch>',
+      ].join('\n');
+
+      fakeNetEngine.setResponseText('dummy://bar', patchText);
+
+      const manifest = await parser.start('dummy://foo', playerInterface);
+      const stream = manifest.variants[0].video;
+      expect(stream).toBeTruthy();
+      await stream.createSegmentIndex();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+      ]);
+
+      await updateManifest();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+        ManifestParser.makeReference('s2.mp4', 1, 4, originalUri),
+      ]);
+
+      fakeNetEngine.setResponseText('dummy://bar', patchText2);
+      await updateManifest();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+        ManifestParser.makeReference('s2.mp4', 1, 4, originalUri),
+        ManifestParser.makeReference('s3.mp4', 4, 7, originalUri),
+      ]);
+
+      fakeNetEngine.setResponseText('dummy://bar', patchText3);
+      await updateManifest();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+        ManifestParser.makeReference('s2.mp4', 1, 4, originalUri),
+        ManifestParser.makeReference('s3.mp4', 4, 7, originalUri),
+        ManifestParser.makeReference('s4.mp4', 7, 10, originalUri),
+      ]);
+    });
+    it('modify @r attribute of an S element with @n=', async () => {
+      const xPath = '/' + [
+        'MPD',
+        'Period[@id=\'1\']',
+        'AdaptationSet[@id=\'1\']',
+        'Representation[@id=\'3\']',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S',
+      ].join('/');
+      const patchText = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <add sel="${xPath}" pos="after">`,
+        '    <S d="3" t="1" />',
+        '  </add>',
+        '</Patch>',
+      ].join('\n');
+
+      const xPath2 = '/' + [
+        'MPD',
+        'Period[@id=\'1\']',
+        'AdaptationSet[@id=\'1\']',
+        'Representation[@id=\'3\']',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S',
+      ].join('/');
+      const patchText2 = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <add sel="${xPath2}" pos="after">`,
+        '    <S d="3" t="4" n="3" />',
+        '  </add>',
+        '</Patch>',
+      ].join('\n');
+
+      const xPath3 = '/' + [
+        'MPD',
+        'Period[@id=&#39;1&#39;]',
+        'AdaptationSet[@id=&#39;1&#39;]',
+        'Representation[@id=&#39;3&#39;]',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S[@n=&#39;3&#39;]/@r',
+      ].join('/');
+      const patchText3 = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <replace sel="${xPath3}">`,
+        '    1',
+        '  </replace>',
+        '</Patch>',
+      ].join('\n');
+
+      fakeNetEngine.setResponseText('dummy://bar', patchText);
+
+      const manifest = await parser.start('dummy://foo', playerInterface);
+      const stream = manifest.variants[0].video;
+      expect(stream).toBeTruthy();
+      await stream.createSegmentIndex();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+      ]);
+
+      await updateManifest();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+        ManifestParser.makeReference('s2.mp4', 1, 4, originalUri),
+      ]);
+
+      fakeNetEngine.setResponseText('dummy://bar', patchText2);
+      await updateManifest();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+        ManifestParser.makeReference('s2.mp4', 1, 4, originalUri),
+        ManifestParser.makeReference('s3.mp4', 4, 7, originalUri),
+      ]);
+
+      fakeNetEngine.setResponseText('dummy://bar', patchText3);
+      await updateManifest();
+      ManifestParser.verifySegmentIndex(stream, [
+        ManifestParser.makeReference('s1.mp4', 0, 1, originalUri),
+        ManifestParser.makeReference('s2.mp4', 1, 4, originalUri),
+        ManifestParser.makeReference('s3.mp4', 4, 7, originalUri),
+        ManifestParser.makeReference('s4.mp4', 7, 10, originalUri),
+      ]);
+    });
+
+    it('extends shared timeline between representations', async () => {
+      const manifestText = [
+        `<MPD id="${mpdId}" type="dynamic"`,
+        '    availabilityStartTime="1970-01-01T00:00:00Z"',
+        `    publishTime="${publishTime.toUTCString()}"`,
+        '    suggestedPresentationDelay="PT5S"',
+        `    minimumUpdatePeriod="PT${updateTime}S">`,
+        `  <PatchLocation ttl="${ttl}">dummy://bar</PatchLocation>`,
+        '  <Period id="1">',
+        '    <AdaptationSet id="1" mimeType="video/mp4">',
+        '      <SegmentTemplate media="s$Number$.mp4">',
+        '        <SegmentTimeline>',
+        '          <S d="1" t="0" />',
+        '        </SegmentTimeline>',
+        '      </SegmentTemplate>',
+        '      <Representation id="3" bandwidth="500">',
+        '        <BaseURL>http://example.com/v3/</BaseURL>',
+        '      </Representation>',
+        '      <Representation id="4" bandwidth="1000">',
+        '        <BaseURL>http://example.com/v4/</BaseURL>',
+        '      </Representation>',
+        '    </AdaptationSet>',
+        '  </Period>',
+        '</MPD>',
+      ].join('\n');
+      const xPath = '/' + [
+        'MPD',
+        'Period[@id=\'1\']',
+        'AdaptationSet[@id=\'1\']',
+        'SegmentTemplate',
+        'SegmentTimeline',
+        'S',
+      ].join('/');
+      const patchText = [
+        `<Patch mpdId="${mpdId}"`,
+        `    originalPublishTime="${publishTime.toUTCString()}">`,
+        `  <add sel="${xPath}" pos="after">`,
+        '    <S d="1" t="1" />',
+        '  </add>',
+        '</Patch>',
+      ].join('\n');
+      fakeNetEngine.setResponseText('dummy://foo', manifestText);
+      fakeNetEngine.setResponseText('dummy://bar', patchText);
+
+      const manifest = await parser.start('dummy://foo', playerInterface);
+      expect(manifest.variants.length).toBe(2);
+      for (const variant of manifest.variants) {
+        const stream = variant.video;
+        expect(stream).toBeTruthy();
+        // eslint-disable-next-line no-await-in-loop
+        await stream.createSegmentIndex();
+        ManifestParser.verifySegmentIndex(stream, [
+          ManifestParser.makeReference('s1.mp4', 0, 1,
+              `${originalUri}v${stream.originalId}/`),
+        ]);
+      }
+
+      await updateManifest();
+      for (const variant of manifest.variants) {
+        const stream = variant.video;
+        ManifestParser.verifySegmentIndex(stream, [
+          ManifestParser.makeReference('s1.mp4', 0, 1,
+              `${originalUri}v${stream.originalId}/`),
+          ManifestParser.makeReference('s2.mp4', 1, 2,
+              `${originalUri}v${stream.originalId}/`),
+        ]);
+      }
     });
   });
 });

@@ -257,8 +257,6 @@ shakaDemo.Config = class {
             'manifest.hls.mediaPlaylistFullMimeType')
         .addBoolInput_('Ignore Program Date Time from manifest',
             'manifest.hls.ignoreManifestProgramDateTime')
-        .addBoolInput_('Use Safari behavior for live',
-            'manifest.hls.useSafariBehaviorForLive')
         .addNumberInput_('Live segments delay',
             'manifest.hls.liveSegmentsDelay')
         .addBoolInput_('Enable HLS sequence mode', 'manifest.hls.sequenceMode')
@@ -317,7 +315,9 @@ shakaDemo.Config = class {
         .addNumberInput_('Minimum time to switch',
             'abr.minTimeToSwitch',
             /* canBeDecimal= */ true,
-            /* canBeZero= */ true);
+            /* canBeZero= */ true)
+        .addBoolInput_('Prefer Network Information bandwidth',
+            'abr.preferNetworkInformationBandwidth');
     this.addRetrictionsSection_('abr', 'Adaptation Restrictions');
   }
 
@@ -410,7 +410,9 @@ shakaDemo.Config = class {
     const prefix = category + '.retryParameters.';
     const docLink = this.resolveExternLink_('.RetryParameters');
     this.addSection_(sectionName, docLink)
-        .addNumberInput_('Max Attempts', prefix + 'maxAttempts')
+        .addNumberInput_('Max Attempts', prefix + 'maxAttempts',
+            /* canBeDecimal= */ false,
+            /* canBeZero= */ false)
         .addNumberInput_('Base Delay', prefix + 'baseDelay',
             /* canBeDecimal= */ true)
         .addNumberInput_('Backoff Factor', prefix + 'backoffFactor',
@@ -467,6 +469,8 @@ shakaDemo.Config = class {
         .addBoolInput_('Auto Low Latency Mode', 'streaming.autoLowLatencyMode')
         .addBoolInput_('Force HTTP', 'streaming.forceHTTP')
         .addBoolInput_('Force HTTPS', 'streaming.forceHTTPS')
+        .addNumberInput_('Min bytes for progress events',
+            'streaming.minBytesForProgressEvents')
         .addBoolInput_('Prefer native HLS playback when available',
             'streaming.preferNativeHls')
         .addNumberInput_('Update interval seconds',
