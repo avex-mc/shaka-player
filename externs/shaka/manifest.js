@@ -186,7 +186,8 @@ shaka.extern.ServiceDescription;
  *   bandwidth: number,
  *   allowedByApplication: boolean,
  *   allowedByKeySystem: boolean,
- *   decodingInfos: !Array<MediaCapabilitiesDecodingInfo>
+ *   decodingInfos: !Array<MediaCapabilitiesDecodingInfo>,
+ *   displayName: ?string
  * }}
  *
  * @description
@@ -231,6 +232,10 @@ shaka.extern.ServiceDescription;
  *   <i>Defaults to [].</i><br>
  *   Set by StreamUtils to indicate the results from MediaCapabilities
  *   decodingInfo.
+ * @property {?string} displayName
+ *   The display name for the variant, as provided in the manifest (e.g., HLS
+ *   DISPLAY-NAME attribute). This can be used to show custom resolution names
+ *   like "1080p", "720p", etc. in the quality selector UI.
  *
  * @exportDoc
  */
