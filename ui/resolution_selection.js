@@ -384,6 +384,7 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
             t.frameRate == track.frameRate &&
             t.hdr == track.hdr &&
             t.videoLayout == track.videoLayout &&
+            t.displayName == track.displayName &&
             shaka.util.ArrayUtils.equal(t.roles, track.roles);
         if (ret && this.controls.getConfig().showVideoCodec &&
             t.codecs && track.codecs) {
