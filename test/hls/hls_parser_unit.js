@@ -5789,12 +5789,8 @@ describe('HlsParser', () => {
 
     await actualVideo0.createSegmentIndex();
 
-    // After loading just ONE stream, all MIME types agree again, and have been
-    // updated to reflect the TS content found inside the loaded playlist.
-    // This is how we avoid having the unloaded tracks filtered out during
-    // startup.
     expect(actualVideo0.mimeType).toBe('video/mp2t');
-    expect(actualVideo1.mimeType).toBe('video/mp2t');
+    expect(actualVideo1.mimeType).toBe('video/mp4');
   });
 
   it('lazy-loads AAC content without filtering it out', async () => {
@@ -5849,13 +5845,9 @@ describe('HlsParser', () => {
 
     await actualAudio0.createSegmentIndex();
 
-    // After loading just ONE stream, all MIME types agree again, and have been
-    // updated to reflect the AAC content found inside the loaded playlist.
-    // This is how we avoid having the unloaded tracks filtered out during
-    // startup.
     expect(actualAudio0.mimeType).toBe('audio/aac');
     expect(actualAudio0.codecs).toBe('mp4a');
-    expect(actualAudio1.mimeType).toBe('audio/aac');
+    expect(actualAudio1.mimeType).toBe('audio/mp4');
     expect(actualAudio1.codecs).toBe('mp4a');
   });
 
@@ -6358,5 +6350,46 @@ describe('HlsParser', () => {
 
     const video1 = manifest.variants[0] && manifest.variants[0].video;
     expect(video1.codecs).toBe('av01.0.04M.10.0.111.09.16.09.0');
+  });
+
+  it('parses manifest with audio groups and variants', async () => {
+    const masterPlaylist = [
+      '#EXTM3U\n',
+      '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio-aach-64",NAME="audio64"\n',
+      '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio-aacl-128",NAME="audio128"\n',
+      '#EXT-X-STREAM-INF:PROGRAM-ID=0,BANDWIDTH=75000,',
+      'AVERAGE-BANDWIDTH=68000,CODECS="mp4a.40.5",AUDIO="audio-aach-64"\n',
+      'https://example.com/1.m3u8\n',
+      '#EXT-X-STREAM-INF:PROGRAM-ID=0,BANDWIDTH=150000',
+      'AVERAGE-BANDWIDTH=136000,CODECS="mp4a.40.2",AUDIO="audio-aacl-128"\n',
+      'https://example.com/0.m3u8\n',
+    ].join('');
+
+    const manifestData = shaka.util.StringUtils.toUTF8(masterPlaylist);
+    const manifestUri = 'https://example.com/master.m3u8';
+    fakeNetEngine.setResponseValue(manifestUri, manifestData);
+
+    const manifest = await parser.start(manifestUri, playerInterface);
+
+    expect(manifest.variants.length).toBe(2);
+
+    const variant1 = manifest.variants[0];
+    const variant2 = manifest.variants[1];
+
+    expect(variant1.audio).toBeTruthy();
+    expect(variant2.audio).toBeTruthy();
+
+    expect(variant1.audio.isAudioMuxedInVideo).toBeFalsy();
+    expect(variant2.audio.isAudioMuxedInVideo).toBeFalsy();
+
+    const audioLabels = manifest.variants.map((v) => {
+      return v.audio.label;
+    });
+
+    expect(audioLabels).toContain('audio128');
+    expect(audioLabels).toContain('audio64');
+
+    // Also check that the audio group IDs are distinct and correct
+    expect(variant1.audio.groupId).not.toBe(variant2.audio.groupId);
   });
 });

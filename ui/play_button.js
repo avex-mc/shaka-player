@@ -12,6 +12,7 @@ goog.require('shaka.ui.Element');
 goog.require('shaka.ui.Enums');
 goog.require('shaka.ui.Locales');
 goog.require('shaka.ui.Localization');
+goog.require('shaka.ui.MaterialSVGIcon');
 goog.require('shaka.util.Dom');
 goog.requireType('shaka.ui.Controls');
 
@@ -32,6 +33,9 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
     /** @protected {!HTMLButtonElement} */
     this.button = shaka.util.Dom.createButton();
     this.parent.appendChild(this.button);
+
+    /** @private {!shaka.ui.MaterialSVGIcon} */
+    this.icon_ = new shaka.ui.MaterialSVGIcon(this.button);
 
     const LOCALE_UPDATED = shaka.ui.Localization.LOCALE_UPDATED;
     this.eventManager.listen(this.localization, LOCALE_UPDATED, () => {
@@ -54,6 +58,11 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
     });
 
     this.eventManager.listen(this.video, 'seeking', () => {
+      this.updateAriaLabel();
+      this.updateIcon();
+    });
+
+    this.eventManager.listen(this.player, 'loaded', () => {
       this.updateAriaLabel();
       this.updateIcon();
     });
@@ -121,7 +130,7 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
    */
   updateAriaLabel() {
     const LocIds = shaka.ui.Locales.Ids;
-    if (this.isEnded()) {
+    if (this.isEnded() && this.video.duration) {
       this.button.ariaLabel = this.localization.resolve(LocIds.REPLAY);
     } else {
       const label = this.isPaused() ? LocIds.PLAY : LocIds.PAUSE;
@@ -134,11 +143,11 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
    * To be overridden by subclasses.
    */
   updateIcon() {
-    const Icons = shaka.ui.Enums.MaterialDesignIcons;
-    if (this.isEnded()) {
-      this.button.textContent = Icons.REPLAY;
+    const Icons = shaka.ui.Enums.MaterialDesignSVGIcons;
+    if (this.isEnded() && this.video.duration) {
+      this.icon_.use(Icons.REPLAY);
     } else {
-      this.button.textContent = this.isPaused() ? Icons.PLAY : Icons.PAUSE;
+      this.icon_.use(this.isPaused() ? Icons.PLAY : Icons.PAUSE);
     }
   }
 };

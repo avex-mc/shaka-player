@@ -15,6 +15,7 @@ goog.require('shaka.ui.Element');
 goog.require('shaka.ui.Enums');
 goog.require('shaka.ui.Locales');
 goog.require('shaka.ui.Localization');
+goog.require('shaka.ui.MaterialSVGIcon');
 goog.require('shaka.ui.Utils');
 goog.require('shaka.util.Dom');
 goog.require('shaka.util.Iterables');
@@ -101,6 +102,20 @@ shaka.ui.OverflowMenu = class extends shaka.ui.Element {
       // There was already an ad.
       shaka.ui.Utils.setDisplay(this.overflowMenuButton_, false);
     }
+
+    /** @private {ResizeObserver} */
+    this.resizeObserver_ = null;
+
+    const resize = () => this.computeMaxHeight_();
+
+    // Use ResizeObserver if available, fallback to window resize event
+    if (window.ResizeObserver) {
+      this.resizeObserver_ = new ResizeObserver(resize);
+      this.resizeObserver_.observe(this.controls.getVideoContainer());
+    } else {
+      // Fallback for older browsers
+      this.eventManager.listen(window, 'resize', resize);
+    }
   }
 
   /** @override */
@@ -112,6 +127,11 @@ shaka.ui.OverflowMenu = class extends shaka.ui.Element {
     }
 
     this.children_ = [];
+
+    if (this.resizeObserver_) {
+      this.resizeObserver_.disconnect();
+      this.resizeObserver_ = null;
+    }
     super.release();
   }
 
@@ -147,10 +167,9 @@ shaka.ui.OverflowMenu = class extends shaka.ui.Element {
     this.overflowMenuButton_ = shaka.util.Dom.createButton();
     this.overflowMenuButton_.classList.add('shaka-overflow-menu-button');
     this.overflowMenuButton_.classList.add('shaka-no-propagation');
-    this.overflowMenuButton_.classList.add('material-icons-round');
     this.overflowMenuButton_.classList.add('shaka-tooltip');
-    this.overflowMenuButton_.textContent =
-      shaka.ui.Enums.MaterialDesignIcons.OPEN_OVERFLOW;
+    new shaka.ui.MaterialSVGIcon(this.overflowMenuButton_).use(
+        shaka.ui.Enums.MaterialDesignSVGIcons.OPEN_OVERFLOW);
     const markEl = shaka.util.Dom.createHTMLElement('span');
     markEl.classList.add('shaka-overflow-quality-mark');
     markEl.style.display = 'none';

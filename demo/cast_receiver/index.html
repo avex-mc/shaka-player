@@ -25,6 +25,7 @@
     <link rel="preconnect" href="https://www.gstatic.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=block" />
     <link rel="stylesheet" href="../../dist/controls.css">
     <link rel="stylesheet" href="receiver_app.css">
 
@@ -47,8 +48,6 @@ UNCOMPILED_JS = [
   // Bootstrap the Shaka Player library through the Closure library.
   '../../node_modules/google-closure-library/closure/goog/base.js',
   '../../dist/deps.js',
-  // Compiled into Shaka Player, but outside of the Closure deps system.
-  '../../node_modules/eme-encryption-scheme-polyfill/index.js',
   // This file contains goog.require calls for all exported library classes.
   '../../shaka-player.uncompiled.js',
   // These are the individual parts of the receiver app.

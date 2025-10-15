@@ -11,20 +11,24 @@ so the exact milestone for future features is not pre-determined.
 Candidate features for future release cycles:
  - Background fetch for offline storage
    https://github.com/shaka-project/shaka-player/issues/879
- - A method to stitch together clips
-   https://github.com/shaka-project/shaka-player/issues/764
- - CMCD v2
 
 v5.0
  - Conversion to Typescript (Smaller, more modular binary)
+
+v4.17 - 2025 Q4
+ - TBD
+
+=====
 
 v4.16 - 2025 Q3
  - CMCDv2
    https://github.com/shaka-project/shaka-player/issues/8660
  - HDR detection in Tizen and WebOS
    https://github.com/shaka-project/shaka-player/issues/8441
-
-=====
+ - DASH: Add support for certificate acquisition URL
+   https://github.com/shaka-project/shaka-player/issues/8823
+ - UI: Replace Material Design Icon font with SVG
+   https://github.com/shaka-project/shaka-player/issues/2467
 
 v4.15 - 2025 Q2
  - Modernization of the UI

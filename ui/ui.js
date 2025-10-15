@@ -253,6 +253,7 @@ shaka.ui.Overlay = class {
   defaultConfig_() {
     const controlPanelElements = [
       'play_pause',
+      'skip_previous',
       'skip_next',
       'mute',
       'volume',
@@ -283,7 +284,6 @@ shaka.ui.Overlay = class {
         'playback_rate',
         'recenter_vr',
         'toggle_stereoscopic',
-        'save_video_frame',
       ],
       statisticsList: [
         'width',
@@ -360,8 +360,8 @@ shaka.ui.Overlay = class {
       doubleClickForFullscreen: true,
       singleClickForPlayAndPause: true,
       enableKeyboardPlaybackControls: true,
-      enableFullscreenOnRotation: true,
-      forceLandscapeOnFullscreen: true,
+      enableFullscreenOnRotation: false,
+      forceLandscapeOnFullscreen: false,
       enableTooltips: true,
       keyboardSeekDistance: 5,
       keyboardLargeSeekDistance: 60,
@@ -374,10 +374,12 @@ shaka.ui.Overlay = class {
       displayInVrMode: false,
       defaultVrProjectionMode: 'equirectangular',
       setupMediaSession: true,
-      preferVideoFullScreenInVisionOS: false,
+      preferVideoFullScreenInVisionOS: true,
       showAudioCodec: true,
       showVideoCodec: true,
       castSenderUrl: 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js',
+      enableKeyboardPlaybackControlsInWindow: false,
+      alwaysShowVolumeBar: false,
     };
 
     // On mobile, by default, hide the volume slide and the small play/pause
@@ -389,8 +391,13 @@ shaka.ui.Overlay = class {
       config.seekOnTaps = true;
       config.enableTooltips = false;
       config.doubleClickForFullscreen = false;
+      const device = shaka.device.DeviceFactory.getDevice();
+      config.enableFullscreenOnRotation = device.getBrowserEngine() !==
+          shaka.device.IDevice.BrowserEngine.WEBKIT;
+      config.forceLandscapeOnFullscreen = true;
       const filterElements = [
         'play_pause',
+        'skip_previous',
         'skip_next',
         'volume',
       ];
@@ -400,9 +407,7 @@ shaka.ui.Overlay = class {
           (name) => !filterElements.includes(name));
       config.contextMenuElements = config.contextMenuElements.filter(
           (name) => !filterElements.includes(name));
-    }
-
-    if (this.isSmartTV()) {
+    } else if (this.isSmartTV()) {
       config.addBigPlayButton = true;
       config.singleClickForPlayAndPause = false;
       config.enableTooltips = false;

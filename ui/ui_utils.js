@@ -9,7 +9,7 @@ goog.provide('shaka.ui.Utils');
 
 goog.require('goog.asserts');
 goog.require('shaka.ui.Enums');
-goog.require('shaka.util.Dom');
+goog.require('shaka.ui.MaterialSVGIcon');
 
 
 shaka.ui.Utils = class {
@@ -62,16 +62,16 @@ shaka.ui.Utils = class {
 
 
   /**
-   * @return {!Element}
+   * @return {!SVGElement}
    */
   static checkmarkIcon() {
-    const icon = shaka.util.Dom.createHTMLElement('i');
-    icon.classList.add('material-icons-round');
-    icon.classList.add('shaka-chosen-item');
-    icon.textContent = shaka.ui.Enums.MaterialDesignIcons.CHECKMARK;
+    const icon = new shaka.ui.MaterialSVGIcon(null,
+        shaka.ui.Enums.MaterialDesignSVGIcons.CHECKMARK);
+    const iconElement = icon.getSvgElement();
+    iconElement.classList.add('shaka-chosen-item');
     // Screen reader should ignore icon text.
-    icon.ariaHidden = 'true';
-    return icon;
+    iconElement.ariaHidden = 'true';
+    return iconElement;
   }
 
 
@@ -105,7 +105,8 @@ shaka.ui.Utils = class {
    * @return {string}
    */
   static buildTimeString(displayTime, showHour) {
-    const h = Math.floor(displayTime / 3600);
+    const d = Math.floor(displayTime / 86400);
+    const h = Math.floor((displayTime % 86400) / 3600);
     const m = Math.floor((displayTime / 60) % 60);
     let s = Math.floor(displayTime % 60);
     if (s < 10) {
@@ -117,6 +118,12 @@ shaka.ui.Utils = class {
         text = '0' + text;
       }
       text = h + ':' + text;
+      if (d > 0) {
+        if (h < 10) {
+          text = '0' + text;
+        }
+        text = d + ':' + text;
+      }
     }
     return text;
   }

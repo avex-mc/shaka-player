@@ -487,7 +487,7 @@ describe('StreamUtils', () => {
             /* usePersistentLicenses= */ false, /* srcEquals= */ false,
             /* preferredKeySystems= */ []);
         expect(decodingInfoSpy.calls.argsFor(0)[0].video.transferFunction)
-            .toBe('srgb');
+            .toBeUndefined();
         expect(decodingInfoSpy.calls.argsFor(1)[0].video.transferFunction)
             .toBe('pq');
         expect(decodingInfoSpy.calls.argsFor(2)[0].video.transferFunction)
@@ -1097,6 +1097,45 @@ describe('StreamUtils', () => {
           /* preferredTextFormats= */ []);
       expect(manifest.variants.length).toBe(1);
       expect(manifest.variants[0].video.codecs).toBe('dvh1.05.03');
+    });
+
+    it('allow different video roles', async () => {
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.addVariant(1, (variant) => {
+          variant.addVideo(2, (stream) => {
+            stream.bandwidth = 4000000;
+            stream.size(1920, 1080);
+            stream.mime('video/mp4', 'av01.0.04M.10.0.111.09.16.09.0');
+            stream.roles = ['main'];
+          });
+        });
+        manifest.addVariant(2, (variant) => {
+          variant.addVideo(3, (stream) => {
+            stream.bandwidth = 4000000;
+            stream.size(1920, 1080);
+            stream.mime('video/mp4', 'av01.0.04M.10.0.111.09.16.09.0');
+            stream.roles = ['sign'];
+          });
+        });
+      });
+      navigator.mediaCapabilities.decodingInfo =
+          shaka.test.Util.spyFunc(decodingInfoSpy);
+      decodingInfoSpy.and.callFake((config) => {
+        return Promise.resolve({supported: true, smooth: true});
+      });
+
+      await StreamUtils.getDecodingInfosForVariants(manifest.variants,
+          /* usePersistentLicenses= */false, /* srcEquals= */ false,
+          /* preferredKeySystems= */ []);
+
+      shaka.util.StreamUtils.chooseCodecsAndFilterManifest(manifest,
+          /* preferredVideoCodecs= */[],
+          /* preferredAudioCodecs= */[],
+          /* preferredDecodingAttributes= */[],
+          /* preferredTextFormats= */ []);
+      expect(manifest.variants.length).toBe(2);
+      expect(manifest.variants[0].video.roles).toContain('main');
+      expect(manifest.variants[1].video.roles).toContain('sign');
     });
 
     it('choose Dolby Vision at same bitrate and same resolution', async () => {

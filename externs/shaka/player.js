@@ -252,6 +252,7 @@ shaka.extern.BufferedInfo;
  *
  *   language: string,
  *   label: ?string,
+ *   videoLabel: ?string,
  *   kind: ?string,
  *   width: ?number,
  *   height: ?number,
@@ -269,6 +270,7 @@ shaka.extern.BufferedInfo;
  *   primary: boolean,
  *   roles: !Array<string>,
  *   audioRoles: Array<string>,
+ *   videoRoles: Array<string>,
  *   accessibilityPurpose: ?shaka.media.ManifestParser.AccessibilityPurpose,
  *   forced: boolean,
  *   videoId: ?number,
@@ -311,6 +313,9 @@ shaka.extern.BufferedInfo;
  *   i.e. <code>'en-US'</code>.
  * @property {?string} label
  *   The track label, which is unique text that should describe the track.
+ * @property {?string} videoLabel
+ *   The video track label, which is unique text that should describe the video
+ *   track.
  * @property {?string} kind
  *   (only for text tracks) The kind of text track, either
  *   <code>'caption'</code> or <code>'subtitle'</code>.
@@ -353,6 +358,10 @@ shaka.extern.BufferedInfo;
  *   The roles of the audio in the track, e.g. <code>'main'</code> or
  *   <code>'commentary'</code>. Will be null for text tracks or variant tracks
  *   without audio.
+ * @property {Array<string>} videoRoles
+ *   The roles of the video in the track, e.g. <code>'main'</code> or
+ *   <code>'sign'</code>. Will be null for text tracks or variant tracks
+ *   without video.
  * @property {?shaka.media.ManifestParser.AccessibilityPurpose
  *           } accessibilityPurpose
  *   The DASH accessibility descriptor, if one was provided for this track.
@@ -552,7 +561,9 @@ shaka.extern.TextTrack;
  *   colorGamut: ?string,
  *   videoLayout: ?string,
  *   mimeType: ?string,
- *   codecs: ?string
+ *   codecs: ?string,
+ *   roles: !Array<string>,
+ *   label: ?string,
  * }}
  *
  * @description
@@ -582,6 +593,10 @@ shaka.extern.TextTrack;
  *   The video MIME type of the content provided in the manifest.
  * @property {?string} codecs
  *   The video codecs string provided in the manifest, if present.
+ * @property {!Array<string>} roles
+ *   The roles of the track, e.g. <code>'main'</code>, <code>'sign'</code>.
+ * @property {?string} label
+ *   The track label, which is unique text that should describe the track.
  * @exportDoc
  */
 shaka.extern.VideoTrack;
@@ -1324,12 +1339,14 @@ shaka.extern.PersistentSessionMetadata;
  *   Specify the default audio security level for Widevine when audio robustness
  *   is not specified.
  *   <br>
- *   Defaults to <code>'SW_SECURE_CRYPTO'</code>.
+ *   Defaults to <code>'SW_SECURE_CRYPTO'</code> except on Android where the
+ *   default value <code>''</code>.
  * @property {string} defaultVideoRobustnessForWidevine
  *   Specify the default video security level for Widevine when video robustness
  *   is not specified.
  *   <br>
- *   Defaults to <code>'SW_SECURE_DECODE'</code>.
+ *   Defaults to <code>'SW_SECURE_DECODE'</code> except on Android where the
+ *   default value <code>''</code>.
  * @exportDoc
  */
 shaka.extern.DrmConfiguration;
@@ -1385,7 +1402,6 @@ shaka.extern.xml.Node;
  *   manifestPreprocessor: function(!Element),
  *   manifestPreprocessorTXml: function(!shaka.extern.xml.Node),
  *   sequenceMode: boolean,
- *   multiTypeVariantsAllowed: boolean,
  *   useStreamOnceInPeriodFlattening: boolean,
  *   enableFastSwitching: boolean
  * }}
@@ -1457,17 +1473,6 @@ shaka.extern.xml.Node;
  *   "sequence mode" (ignoring their internal timestamps).
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {boolean} multiTypeVariantsAllowed
- *   If true, the manifest parser will create variants that have multiple
- *   mimeTypes or codecs for video or for audio if there is no other choice.
- *   Meant for content where some periods are only available in one mimeType or
- *   codec, and other periods are only available in a different mimeType or
- *   codec. For example, a stream with baked-in ads where the audio codec does
- *   not match the main content.
- *   Might result in undesirable behavior if mediaSource.codecSwitchingStrategy
- *   is not set to SMOOTH.
- *   <br>
- *   Defaults to true if SMOOTH codec switching is supported, RELOAD overwise.
  * @property {boolean} useStreamOnceInPeriodFlattening
  *   If period combiner is used, this option ensures every stream is used
  *   only once in period flattening. It speeds up underlying algorithm
@@ -1643,7 +1648,8 @@ shaka.extern.MssManifestConfiguration;
  *   continueLoadingWhenPaused: boolean,
  *   ignoreSupplementalCodecs: boolean,
  *   updatePeriod: number,
- *   ignoreDrmInfo: boolean
+ *   ignoreDrmInfo: boolean,
+ *   enableAudioGroups: boolean
  * }}
  *
  * @property {shaka.extern.RetryParameters} retryParameters
@@ -1730,6 +1736,11 @@ shaka.extern.MssManifestConfiguration;
  *   system and contained no init data.
  *   <br>
  *   Defaults to <code>false</code>.
+ * @property {boolean} enableAudioGroups
+ *   If set, audio streams will be grouped and filtered by their parent
+ *   adaptation set ID.
+ *   <br>
+ *   Defaults to <code>true</code>.
  * @exportDoc
  */
 shaka.extern.ManifestConfiguration;
@@ -2027,9 +2038,10 @@ shaka.extern.LiveSyncConfiguration;
  * @property {boolean} lowLatencyMode
  *   If <code>true</code>, low latency streaming mode is enabled. If
  *   lowLatencyMode is set to true, it changes the default config values for
- *   other things, see: docs/tutorials/config.md
+ *   other things, only on streams that supports low latency,
+ *   see: docs/tutorials/config.md
  *   <br>
- *   Defaults to <code>false</code>.
+ *   Defaults to <code>true</code>.
  * @property {boolean} preferNativeDash
  *   If true, prefer native DASH playback when possible, regardless of platform.
  *   <br>
@@ -2419,7 +2431,7 @@ shaka.extern.AdsConfiguration;
  *   Indicates the value in milliseconds from which a request is not
  *   considered cached.
  *   <br>
- *   Defaults to <code>20</code>.
+ *   Defaults to <code>5</code>.
  * @property {number} minTimeToSwitch
  *   Indicates the minimum time to change quality once the real bandwidth is
  *   available, in seconds. This time is only used on the first load.
@@ -2483,13 +2495,66 @@ shaka.extern.AdvancedAbrConfiguration;
 
 /**
  * @typedef {{
+ *   mode: string,
+ *   enabled: boolean,
+ *   useHeaders: boolean,
+ *   url: string,
+ *   includeKeys: !Array<string>,
+ *   events: !Array<string>,
+ *   timeInterval: number,
+ * }}
+ *
+ * @description
+ *  Common Media Client Data (CMCD) Target Configuration
+ *
+ * @property {string} mode
+ * Specifies the transmission strategy for the CMCD data.
+ * <br>
+ * Possible values are:
+ * <ul><li><b>'response'</b>: This mode reports data to one or more alternate
+ * destinations after either the full response or an error has been received
+ * to a media object request, using one of the Data Transmission Modes
+ * (header, query parameters, json object)
+ * </li></ul>
+ * @property {boolean} enabled
+ * If <code>true</code>, enable CMCD data to be sent with media requests.
+ * <br>
+ * Defaults to <code>false</code>.
+ * @property {boolean} useHeaders
+ * If <code>true</code>, the CMCD data is sent as HTTP request headers.
+ * If <code>false</code>, it is sent as query parameters in the URL.
+ * <br>
+ * Defaults to <code>false</code>.
+ * @property {string} url
+ * A specific URL to which the CMCD data will be sent.
+ * @property {!Array<string>} includeKeys
+ * An array of keys to include in the CMCD data.
+ * If not provided, all keys will be included.
+ * <br>
+ * Defaults to <code>[]</code>.
+ * @property {!Array<string>} events
+ * An array of events to include as part of ps and sta in the CMCD data.
+ * If not provided, all events will be included.
+ * <br>
+ * Defaults to <code>[]</code>.
+ * @property {number} timeInterval
+ *   Time Interval config in seconds
+ *   <br>
+ *   Defaults to <code>10</code>.
+ * @exportDoc
+ */
+shaka.extern.CmcdTarget;
+
+/**
+ * @typedef {{
  *   enabled: boolean,
  *   useHeaders: boolean,
  *   sessionId: string,
  *   contentId: string,
  *   rtpSafetyFactor: number,
  *   includeKeys: !Array<string>,
- *   version: number
+ *   version: number,
+ *   targets: ?Array<shaka.extern.CmcdTarget>
  * }}
  *
  * @description
@@ -2534,6 +2599,9 @@ shaka.extern.AdvancedAbrConfiguration;
  *   and CMCD v2 specifications, respectively.
  *   <br>
  *   Defaults to <code>1</code>.
+ * @property {Array<shaka.extern.CmcdTarget>=} targets
+ *   The event/response mode targets.
+ *   <br>
  * @exportDoc
  */
 shaka.extern.CmcdConfiguration;
@@ -2695,7 +2763,7 @@ shaka.extern.TextDisplayerConfiguration;
  *   networking: shaka.extern.NetworkingConfiguration,
  *   mediaSource: shaka.extern.MediaSourceConfiguration,
  *   abrFactory: shaka.extern.AbrManager.Factory,
- *   adaptationSetCriteriaFactory: shaka.media.AdaptationSetCriteria.Factory,
+ *   adaptationSetCriteriaFactory: shaka.extern.AdaptationSetCriteria.Factory,
  *   abr: shaka.extern.AbrConfiguration,
  *   cmcd: shaka.extern.CmcdConfiguration,
  *   cmsd: shaka.extern.CmsdConfiguration,
@@ -2705,7 +2773,8 @@ shaka.extern.TextDisplayerConfiguration;
  *   preferredAudioLanguage: string,
  *   preferredAudioLabel: string,
  *   preferredTextLanguage: string,
- *   preferredVariantRole: string,
+ *   preferredAudioRole: string,
+ *   preferredVideoRole: string,
  *   preferredTextRole: string,
  *   preferredVideoCodecs: !Array<string>,
  *   preferredAudioCodecs: !Array<string>,
@@ -2744,7 +2813,7 @@ shaka.extern.TextDisplayerConfiguration;
  *   Media source configuration and settings.
  * @property {shaka.extern.AbrManager.Factory} abrFactory
  *   A factory to construct an abr manager.
- * @property {shaka.media.AdaptationSetCriteria.Factory
+ * @property {shaka.extern.AdaptationSetCriteria.Factory
  *           } adaptationSetCriteriaFactory
  *   A factory to construct an adaptation set criteria.
  * @property {shaka.extern.AbrConfiguration} abr
@@ -2771,10 +2840,12 @@ shaka.extern.TextDisplayerConfiguration;
  *   Defaults to <code>''</code>.
  * @property {string} preferredAudioLabel
  *   The preferred label to use for audio tracks.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>''</code>.
  * @property {string} preferredVideoLabel
  *   The preferred label to use for video tracks.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>''</code>.
  * @property {string} preferredTextLanguage
@@ -2784,31 +2855,41 @@ shaka.extern.TextDisplayerConfiguration;
  *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>''</code>.
- * @property {string} preferredVariantRole
- *   The preferred role to use for variants.
+ * @property {string} preferredAudioRole
+ *   The preferred audio role to use for variants.
+ *   Changing this during playback will not affect the current playback.
+ *   <br>
+ *   Defaults to <code>''</code>.
+ * @property {string} preferredVideoRole
+ *   The preferred video role to use for variants.
  *   <br>
  *   Defaults to <code>''</code>.
  * @property {string} preferredTextRole
  *   The preferred role to use for text tracks.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>''</code>.
  * @property {!Array<string>} preferredVideoCodecs
  *   The list of preferred video codecs, in order of highest to lowest priority.
  *   This is used to do a filtering of the variants available for the player.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {!Array<string>} preferredAudioCodecs
  *   The list of preferred audio codecs, in order of highest to lowest priority.
  *   This is used to do a filtering of the variants available for the player.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {!Array<string>} preferredTextFormats
  *   The list of preferred text formats, in order of highest to lowest priority.
  *   This is used to do a filtering of the text tracks available for the player.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {number} preferredAudioChannelCount
  *   The preferred number of audio channels.
+ *   Changing this during playback will not affect the current playback.
  *   <br>
  *   Defaults to <code>2</code>.
  * @property {string} preferredVideoHdrLevel
@@ -2864,8 +2945,11 @@ shaka.extern.TextDisplayerConfiguration;
  * @property {shaka.extern.TextDisplayerConfiguration} textDisplayer
  *   Text displayer configuration and settings.
  * @property {shaka.extern.TextDisplayer.Factory} textDisplayFactory
- *   A factory to construct a text displayer. Note that, if this is changed
- *   during playback, it will cause the text tracks to be reloaded.
+ *   A factory to construct a text displayer. If this is changed during
+ *   playback, it will cause the text tracks to be reloaded. During playback it
+ *   may be called automatically if a change in
+ *   <code>webkitPresentationMode</code> is detected and
+ *   <code>setVideoContainer</code> has been called.
  * @exportDoc
  */
 shaka.extern.PlayerConfiguration;
@@ -2874,6 +2958,7 @@ shaka.extern.PlayerConfiguration;
 /**
  * @typedef {{
  *   preloadNextUrlWindow: number,
+ *   preloadPrevItem: boolean,
  *   repeatMode: shaka.config.RepeatMode
  * }}
  *
@@ -2885,7 +2970,9 @@ shaka.extern.PlayerConfiguration;
  *   next item. Measured in seconds. If the value is 0, the next URL will not
  *   be preloaded at all.
  *   <br>
- *   Defaults to <code>30</code>.
+ *   Defaults to <code>Infinity</code>.
+ * @property {boolean} preloadPrevItem
+ *   Defaults to <code>true</code>.
  * @property {shaka.config.RepeatMode} repeatMode
  *   Controls behavior of the queue when all items have been played.
  *   <br>
