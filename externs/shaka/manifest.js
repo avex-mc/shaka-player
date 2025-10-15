@@ -391,7 +391,8 @@ shaka.extern.SegmentIndex = class {
  *   mssPrivateData: (shaka.extern.MssPrivateData|undefined),
  *   external: boolean,
  *   fastSwitching: boolean,
- *   fullMimeTypes: !Set.<string>
+ *   fullMimeTypes: !Set.<string>,
+ *   isAudioMuxedInVideo: boolean
  * }}
  *
  * @description
@@ -538,6 +539,8 @@ shaka.extern.SegmentIndex = class {
  *   represents the types used in each period of the original manifest.
  *   Meant for being used by compatibility checking, such as with
  *   MediaSource.isTypeSupported.
+ * @property {boolean} isAudioMuxedInVideo
+ *   Indicate if the audio of this stream is muxed in the video of other stream.
  *
  * @exportDoc
  */
@@ -566,3 +569,25 @@ shaka.extern.Stream;
  * @exportDoc
  */
 shaka.extern.MssPrivateData;
+
+
+/**
+ * @typedef {{
+ *   height: number,
+ *   positionX: number,
+ *   positionY: number,
+ *   width: number
+ * }}
+ *
+ * @property {number} height
+ *    The thumbnail height in px.
+ * @property {number} positionX
+ *    The thumbnail left position in px.
+ * @property {number} positionY
+ *    The thumbnail top position in px.
+ * @property {number} width
+ *    The thumbnail width in px.
+ *
+ * @exportDoc
+ */
+shaka.extern.ThumbnailSprite;

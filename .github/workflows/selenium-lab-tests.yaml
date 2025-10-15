@@ -53,10 +53,6 @@ on:
     # Runs every night at 2am PST / 10am UTC, testing against the main branch.
     - cron: '0 10 * * *'
 
-# Only one run of this workflow is allowed at a time, since it uses physical
-# resources in our lab.
-concurrency: selenium-lab
-
 jobs:
   compute-sha:
     name: Compute SHA
@@ -87,7 +83,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sha: ${{ needs.compute-sha.outputs.SHA }}
+          ref: ${{ needs.compute-sha.outputs.SHA }}
 
       - name: Install dependencies
         run: npm ci
@@ -212,6 +208,13 @@ jobs:
     # This is a self-hosted runner in a Docker container, with access to our
     # lab's Selenium grid on port 4444.
     runs-on: self-hosted-selenium
+
+    # Only one run of this job is allowed at a time, since it uses physical
+    # resources in our lab.
+    concurrency:
+      group: selenium-lab-${{ matrix.browser }}
+      cancel-in-progress: false
+
     needs: [compute-sha, build-shaka, matrix-config]
     strategy:
       fail-fast: false
@@ -280,7 +283,7 @@ jobs:
       # ALLOCATED_PORT must be defined by the self-hosted runner, and mapped
       # from the host to the container.
       - name: Test Player
-        timeout-minutes: 25
+        timeout-minutes: 30
         run: |
           # Use of an array keeps elements intact, and allows an element to
           # contain spaces without being expanded into multiple arguments in a

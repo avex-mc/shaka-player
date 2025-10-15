@@ -934,7 +934,11 @@ describe('DashParser Manifest', () => {
           shaka.util.Error.Severity.CRITICAL,
           shaka.util.Error.Category.MANIFEST,
           shaka.util.Error.Code.DASH_UNSUPPORTED_XLINK_ACTUATE);
-      await Dash.testFails(source, error);
+
+      const config = shaka.util.PlayerConfiguration.createDefault().manifest;
+      config.dash.disableXlinkProcessing = false;
+
+      await Dash.testFails(source, error, config);
     });
 
     it('failed network requests', async () => {
@@ -1179,6 +1183,41 @@ describe('DashParser Manifest', () => {
     expect(manifest.variants[0].video.trickModeVideo).toBeUndefined();
   });
 
+  it('Disable I-Frame does not create I-Frame streams', async () => {
+    const manifestText = [
+      '<MPD minBufferTime="PT75S">',
+      '  <Period id="1" duration="PT30S">',
+      '    <AdaptationSet id="1" mimeType="video/mp4">',
+      '      <Representation bandwidth="1" codecs="avc1.4d401f">',
+      '        <SegmentTemplate media="1.mp4" duration="1" />',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '    <AdaptationSet id="2" mimeType="video/mp4">',
+      '      <EssentialProperty value="1" ',
+      '        schemeIdUri="http://dashif.org/guidelines/trickmode" />',
+      '      <Representation bandwidth="1" codecs="avc1.4d401f">',
+      '        <SegmentTemplate media="2.mp4" duration="1" />',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', manifestText);
+
+    const config = shaka.util.PlayerConfiguration.createDefault().manifest;
+    config.disableIFrames = true;
+    parser.configure(config);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+    expect(manifest.variants.length).toBe(1);
+    expect(manifest.textStreams.length).toBe(0);
+
+    const trickModeVideo = manifest.variants[0].video.trickModeVideo;
+    expect(trickModeVideo).toBeNull();
+  });
+
   it('skips unrecognized EssentialProperty elements', async () => {
     const manifestText = [
       '<MPD minBufferTime="PT75S">',
@@ -1213,7 +1252,7 @@ describe('DashParser Manifest', () => {
     expect(trickModeVideo).toBe(null);
   });
 
-  it('populates groupId if configuration enabled', async () => {
+  it('populates groupId', async () => {
     const manifestText = [
       '<MPD minBufferTime="PT75S">',
       '  <Period id="1" duration="PT30S">',
@@ -1239,10 +1278,6 @@ describe('DashParser Manifest', () => {
     ].join('\n');
 
     fakeNetEngine.setResponseText('dummy://foo', manifestText);
-
-    const config = shaka.util.PlayerConfiguration.createDefault().manifest;
-    config.dash.enableAudioGroups = true;
-    parser.configure(config);
 
     /** @type {shaka.extern.Manifest} */
     const manifest = await parser.start('dummy://foo', playerInterface);
@@ -1488,18 +1523,55 @@ describe('DashParser Manifest', () => {
     });
 
     it('parses dolby scheme', async () => {
-      // Parses a hex value in which each 1-bit is a channel.
+      // L,R,C,LFE,Ls,Rs (5.1)
       await testAudioChannelConfiguration(6,
           {'tag:dolby.com,2014:dash:audio_channel_configuration:2011':
-                'F801'});
+             'F801'});
 
-      // This scheme seems to use the same format.
+      // L,R,C,LFE,Ls,Rs,Lrs,Rrs (7.1)
       await testAudioChannelConfiguration(8,
-          {'urn:dolby:dash:audio_channel_configuration:2011': '7037'});
+          {'tag:dolby.com,2014:dash:audio_channel_configuration:2011':
+             'FA01'});
+
+      // L,R,C,LFE,Ls,Rs,Ltm,Rtm (5.1.2)
+      await testAudioChannelConfiguration(8,
+          {'tag:dolby.com,2014:dash:audio_channel_configuration:2011':
+             'F805'});
+
+      // L,R,C,LFE,Ls,Rs (5.1)
+      await testAudioChannelConfiguration(6,
+          {'urn:dolby:dash:audio_channel_configuration:2011': 'F801'});
+
+      // L,R,C,LFE,Ls,Rs,Lrs,Rrs (7.1)
+      await testAudioChannelConfiguration(8,
+          {'urn:dolby:dash:audio_channel_configuration:2011': 'FA01'});
+
+      // L,R,C,LFE,Ls,Rs,Ltm,Rtm (5.1.2)
+      await testAudioChannelConfiguration(8,
+          {'urn:dolby:dash:audio_channel_configuration:2011': 'F805'});
 
       // Results in null if the value is not a valid hex number.
       await testAudioChannelConfiguration(null,
           {'urn:dolby:dash:audio_channel_configuration:2011': 'x'});
+
+      // L,R,C,LFE,Ls,Rs (5.1)
+      await testAudioChannelConfiguration(6,
+          {'tag:dolby.com,2015:dash:audio_channel_configuration:2015':
+             '000047'});
+
+      // L,R,C,LFE,Ls,Rs,Lrs,Rrs (7.1)
+      await testAudioChannelConfiguration(8,
+          {'tag:dolby.com,2015:dash:audio_channel_configuration:2015':
+             '00004F'});
+
+      // L,R,C,LFE,Ls,Rs,Ltm,Rtm (5.1.2)
+      await testAudioChannelConfiguration(8,
+          {'tag:dolby.com,2015:dash:audio_channel_configuration:2015':
+             '0000c7'});
+
+      // Results in null if the value is not a valid hex number.
+      await testAudioChannelConfiguration(null,
+          {'tag:dolby.com,2015:dash:audio_channel_configuration:2015': 'x'});
     });
 
     it('parses MPEG channel configuration scheme', async () => {
@@ -3572,5 +3644,71 @@ describe('DashParser Manifest', () => {
       expect(variant1Ref.initSegmentReference.getUris())
           .toEqual(['dummy://foo/init.mp4?a=1']);
     });
+  });
+
+  it('mixing SegmentTemplate-SegmentTimeline with SegmentTemplate-numbering', async () => { // eslint-disable-line max-len
+    const manifestText = [
+      '<MPD type="static">',
+      '  <Period id="1" duration="PT2S">',
+      '    <AdaptationSet id="2" mimeType="video/mp4">',
+      '      <Representation id="3" width="640" height="480">',
+      '        <SegmentTemplate startNumber="1" media="l-$Number$.mp4">',
+      '          <SegmentTimeline>',
+      '            <S t="0" d="2" />',
+      '          </SegmentTimeline>',
+      '        </SegmentTemplate>',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '  <Period id="4" duration="PT30S">',
+      '    <AdaptationSet id="5" mimeType="video/mp4">',
+      '      <SegmentTemplate media="$Number$.mp4" duration="1" />',
+      '      <Representation id="6" width="640" height="480" />',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', manifestText);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+
+    const timeline = manifest.presentationTimeline;
+    expect(timeline.getSeekRangeStart()).toBe(0);
+    expect(timeline.getSeekRangeEnd()).toBe(32);
+  });
+
+  it('mixing SegmentTemplate-numbering with SegmentTemplate-SegmentTimeline', async () => { // eslint-disable-line max-len
+    const manifestText = [
+      '<MPD type="static">',
+      '  <Period id="4" duration="PT30S">',
+      '    <AdaptationSet id="5" mimeType="video/mp4">',
+      '      <SegmentTemplate media="$Number$.mp4" duration="1" />',
+      '      <Representation id="6" width="640" height="480" />',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '  <Period id="1" duration="PT2S">',
+      '    <AdaptationSet id="2" mimeType="video/mp4">',
+      '      <Representation id="3" width="640" height="480">',
+      '        <SegmentTemplate startNumber="1" media="l-$Number$.mp4">',
+      '          <SegmentTimeline>',
+      '            <S t="0" d="2" />',
+      '          </SegmentTimeline>',
+      '        </SegmentTemplate>',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', manifestText);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+
+    const timeline = manifest.presentationTimeline;
+    expect(timeline.getSeekRangeStart()).toBe(0);
+    expect(timeline.getSeekRangeEnd()).toBe(32);
   });
 });

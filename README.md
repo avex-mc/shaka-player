@@ -41,7 +41,7 @@ for the up-to-date list of maintained branches of Shaka Player.
 |Edge Chromium |**Y**     |**Y**    |**Y**    |untested⁵|**Native**|**Native** |**Native**  | -      | -   |
 |IE            | N        | -       | -       | -       | -        | -         | -          | -      | -   |
 |Safari¹       | -        |**Y**    | -       | -       |**Native**|**Y**      |**Y**       | -      | -   |
-|Opera¹        |untested⁵ |untested⁵|untested⁵|untested⁵|**Native**| -         | -          | -      | -   |
+|Opera¹        |**Y**     |**Y**    |**Y**    |untested⁵|**Native**| -         | -          | -      | -   |
 |Chromecast².  | -        | -       | -       | -       | -        | -         | -          | -      |**Y**|
 |Tizen TV³     | -        | -       | -       | -       | -        | -         | -          | -      |**Y**|
 |WebOS⁶        | -        | -       | -       | -       | -        | -         | -          | -      |**Y**|
@@ -148,6 +148,53 @@ HLS features supported:
 HLS features **not** supported:
  - X-SNAP attribute in interstitials
 
+<details>
+<summary>
+<h3>Supported HLS tags</h3>
+</summary>
+
+For details on the HLS format and these tags' meanings, see https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis
+
+<h4> Multivariant Playlist tags</h4>
+
+- `#EXT-X-STREAM-INF:<attribute-list>`
+  `<URI>`
+- `#EXT-X-MEDIA:<attribute-list>`
+- `#EXT-X-IMAGE-STREAM-INF:<attribute-list>`
+- `#EXT-X-I-FRAME-STREAM-INF:<attribute-list>`
+- `#EXT-X-SESSION-DATA:<attribute-list>`
+- `#EXT-X-SESSION-KEY:<attribute-list>` EME Key-System selection and preloading
+- `#EXT-X-START:TIME-OFFSET=<n>`
+- `#EXT-X-CONTENT-STEERING:<attribute-list>` Content Steering
+- `#EXT-X-DEFINE:<attribute-list>` Variable Substitution (`NAME,VALUE,QUERYPARAM` attributes)
+
+<h4>Media Playlist tags</h4>
+
+- `#EXTM3U`
+- `#EXTINF:<duration>,[<title>]`
+- `#EXT-X-PLAYLIST-TYPE:<type`
+- `#EXT-X-ENDLIST`
+- `#EXT-X-MEDIA-SEQUENCE=<n>`
+- `#EXT-X-TARGETDURATION=<n>`
+- `#EXT-X-DISCONTINUITY`
+- `#EXT-X-DISCONTINUITY-SEQUENCE=<n>`
+- `#EXT-X-BYTERANGE=<n>[@<o>]`
+- `#EXT-X-MAP:<attribute-list>`
+- `#EXT-X-KEY:<attribute-list>` (`KEYFORMAT="identity",METHOD=SAMPLE-AES` is only supports with MP4 segments)
+- `#EXT-X-PROGRAM-DATE-TIME:<attribute-list>`
+- `#EXT-X-START:TIME-OFFSET=<n>`
+- `#EXT-X-SERVER-CONTROL:<attribute-list>`
+- `#EXT-X-PART-INF:PART-TARGET=<n>`
+- `#EXT-X-PART:<attribute-list>`
+- `#EXT-X-SKIP:<attribute-list>` Delta Playlists
+- `#EXT-X-DATERANGE:<attribute-list>` Metadata
+- `#EXT-X-DEFINE:<attribute-list>` Variable Import and Substitution (`NAME,VALUE,IMPORT,QUERYPARAM` attributes)
+- `#EXT-X-GAP`
+- `#EXT-X-PRELOAD-HINT:<attribute-list>`
+- `#EXT-X-BITRATE`
+
+</details>
+
 
 ## MPEG-5 Part2 LCEVC Support
 
@@ -187,7 +234,7 @@ MSS features **not** supported:
 |Edge³         | -        |**Y**    | -       | -        |
 |Edge Chromium |**Y**     |**Y**    | -       |**Y**     |
 |Safari        | -        | -       |**Y**    | -        |
-|Opera         |untested⁵ | -       | -       |untested⁵ |
+|Opera         |**Y**     | -       | -       |**Y**     |
 |Chromecast    |**Y**     |**Y**    | -       |**Y**     |
 |Tizen TV      |**Y**     |**Y**    | -       |**Y**     |
 |WebOS⁷        |untested⁷ |untested⁷| -       |untested⁷ |
@@ -205,8 +252,6 @@ NOTES:
  - ²: DRM must be enabled by the user.  The first time a Firefox user visits a
    site with encrypted media, the user will be prompted to enable DRM.
  - ³: PlayReady in Edge does not seem to work on a VM or over Remote Desktop.
- - ⁵: These are expected to work, but are not actively tested by the Shaka
-   Player team.
  - ⁶: ClearKey is a useful tool for debugging, and does not provide actual
    content security.
  - ⁷: These are expected to work, but are community-supported and untested by
@@ -315,6 +360,7 @@ Shaka Player supports:
 - AWS MediaTailor for Server-Side
 - AWS MediaTailor overlays
 - HLS interstitials
+- DASH Media Presentation Insertion (MPD alternate)
 - Custom Interstitials
 - Basic support of VAST and VMAP without IMA (playback without tracking)
 

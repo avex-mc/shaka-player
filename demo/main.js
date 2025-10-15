@@ -586,7 +586,9 @@ shakaDemo.Main = class {
         asset.storedProgress = 0;
         this.dispatchEventWithName_('shaka-main-offline-progress');
         const start = Date.now();
-        const stored = await storage.store(asset.manifestUri, metadata).promise;
+        const stored = await storage.store(asset.manifestUri, metadata,
+            /* mimeType= */ null, asset.extraThumbnail,
+            asset.extraText).promise;
         const end = Date.now();
         console.log('Download time:', end - start);
         asset.storedContent = stored;
@@ -739,6 +741,9 @@ shakaDemo.Main = class {
     }
     if (asset.features.includes(shakaAssets.Feature.CONTAINERLESS)) {
       mimeTypes.push('audio/aac');
+    }
+    if (asset.features.includes(shakaAssets.Feature.DOLBY_VISION_P5)) {
+      mimeTypes.push('video/mp4; codecs="dvh1.05.01"');
     }
     if (asset.features.includes(shakaAssets.Feature.DOLBY_VISION_3D)) {
       mimeTypes.push('video/mp4; codecs="dvh1.20.01"');
@@ -966,6 +971,11 @@ shakaDemo.Main = class {
     if ('preferredAudioCodecs' in params) {
       this.configure('preferredAudioCodecs',
           params['preferredAudioCodecs'].split(','));
+    }
+
+    if ('preferredTextFormats' in params) {
+      this.configure('preferredTextFormats',
+          params['preferredTextFormats'].split(','));
     }
 
     // Add compiled/uncompiled links.
@@ -1371,18 +1381,19 @@ shakaDemo.Main = class {
         this.video_.poster = shakaDemo.Main.audioOnlyPoster_;
       }
 
-      for (const extraText of asset.extraText) {
-        if (extraText.mime) {
-          this.player_.addTextTrackAsync(extraText.uri, extraText.language,
-              extraText.kind, extraText.mime, extraText.codecs);
-        } else {
-          this.player_.addTextTrackAsync(extraText.uri, extraText.language,
-              extraText.kind);
+      if (!(asset.storedContent && asset.storedContent.offlineUri)) {
+        for (const extraText of asset.extraText) {
+          if (extraText.mime) {
+            this.player_.addTextTrackAsync(extraText.uri, extraText.language,
+                extraText.kind, extraText.mime, extraText.codecs);
+          } else {
+            this.player_.addTextTrackAsync(extraText.uri, extraText.language,
+                extraText.kind);
+          }
         }
-      }
-
-      for (const extraThumbnail of asset.extraThumbnail) {
-        this.player_.addThumbnailsTrack(extraThumbnail);
+        for (const extraThumbnail of asset.extraThumbnail) {
+          this.player_.addThumbnailsTrack(extraThumbnail);
+        }
       }
 
       for (const extraChapter of asset.extraChapter) {
@@ -1424,8 +1435,8 @@ shakaDemo.Main = class {
         const metadata = {
           title: asset.name,
           artwork: [{src: icon}],
+          artist: asset.source,
         };
-        metadata.artist = asset.source;
         navigator.mediaSession.metadata = new MediaMetadata(metadata);
       }
 
@@ -1495,7 +1506,13 @@ shakaDemo.Main = class {
     }
     params.push('uilang=' + this.getUILocale());
 
-    for (const key of ['preferredVideoCodecs', 'preferredAudioCodecs']) {
+    const preferredArray = [
+      'preferredVideoCodecs',
+      'preferredAudioCodecs',
+      'preferredTextFormats',
+    ];
+
+    for (const key of preferredArray) {
       const array = /** @type {!Array.<string>} */(
         this.getCurrentConfigValue(key));
       if (array.length) {
