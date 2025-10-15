@@ -377,7 +377,8 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
     const selectedTrack = tracks.find((track) => track.active);
 
     // Debug: Log all tracks before filtering
-    console.log('All video tracks before filtering:', tracks.map(t => ({
+    // eslint-disable-next-line no-console
+    console.log('All video tracks before filtering:', tracks.map((t) => ({
       displayName: t.displayName,
       height: t.height,
       bandwidth: t.bandwidth,
@@ -406,7 +407,8 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
     });
 
     // Debug: Log filtered tracks
-    console.log('Video tracks after filtering:', tracks.map(t => ({
+    // eslint-disable-next-line no-console
+    console.log('Video tracks after filtering:', tracks.map((t) => ({
       displayName: t.displayName,
       height: t.height,
       bandwidth: t.bandwidth,
