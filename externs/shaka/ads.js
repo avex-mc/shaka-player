@@ -14,6 +14,7 @@
  *   loadTimes: !Array<number>,
  *   averageLoadTime: number,
  *   started: number,
+ *   overlayAds: number,
  *   playedCompletely: number,
  *   skipped: number,
  *   errors: number
@@ -27,7 +28,9 @@
  * @property {number} averageLoadTime
  *   The average time it took to get the final manifest.
  * @property {number} started
- *   The number of ads started.
+ *   The number of ads started (linear and overlays ads).
+ * @property {number} overlayAds
+ *   The number of overlay ads started.
  * @property {number} playedCompletely
  *   The number of ads played completely.
  * @property {number} skipped
@@ -76,7 +79,10 @@ shaka.extern.AdCuePoint;
  *   post: boolean,
  *   timelineRange: boolean,
  *   loop: boolean,
- *   overlay: ?shaka.extern.AdInterstitialOverlay
+ *   overlay: ?shaka.extern.AdPositionInfo,
+ *   displayOnBackground: boolean,
+ *   currentVideo: ?shaka.extern.AdPositionInfo,
+ *   background: ?string
  * }}
  *
  * @description
@@ -128,9 +134,17 @@ shaka.extern.AdCuePoint;
  *   Indicates that the interstitials should play in loop.
  *   Only applies if the interstitials is an overlay.
  *   Only supported when using multiple video elements for interstitials.
- * @property {?shaka.extern.AdInterstitialOverlay} overlay
+ * @property {?shaka.extern.AdPositionInfo} overlay
  *   Indicates the characteristics of the overlay
  *   Only supported when using multiple video elements for interstitials.
+ * @property {boolean} displayOnBackground
+ *   Indicates if we should display on background, shrinking the current video.
+ * @property {?shaka.extern.AdPositionInfo} currentVideo
+ *   Indicates the characteristics of the current video.
+ *   Only set if any feature changes.
+ * @property {?string} background
+ *   Specifies the background, the value can be any value of the CSS background
+ *   property.
  * @exportDoc
  */
 shaka.extern.AdInterstitial;
@@ -144,7 +158,7 @@ shaka.extern.AdInterstitial;
  * }}
  *
  * @description
- * Contains the ad interstitial overlay info.
+ * Contains the coordinates of a position info
  *
  * @property {{x: number, y: number}} viewport
  *   The viewport in pixels.
@@ -154,7 +168,7 @@ shaka.extern.AdInterstitial;
  *   The size in pixels.
  * @exportDoc
  */
-shaka.extern.AdInterstitialOverlay;
+shaka.extern.AdPositionInfo;
 
 
 /**
@@ -342,6 +356,11 @@ shaka.extern.IAd = class {
    * @return {boolean}
    */
   isClientRendering() {}
+
+  /**
+   * @return {boolean}
+   */
+  hasCustomClick() {}
 
   /**
    * @return {boolean}

@@ -270,6 +270,7 @@ shaka.extern.BufferedInfo;
  *   forced: boolean,
  *   videoId: ?number,
  *   audioId: ?number,
+ *   audioGroupId: ?string,
  *   channelsCount: ?number,
  *   audioSamplingRate: ?number,
  *   tilesLayout: ?string,
@@ -361,6 +362,10 @@ shaka.extern.BufferedInfo;
  *   (only for variant tracks) The video stream id.
  * @property {?number} audioId
  *   (only for variant tracks) The audio stream id.
+ * @property {?string} audioGroupId
+ *   (only for variant tracks)
+ *   The ID of the stream's parent element. In DASH, this will be a unique
+ *   ID that represents the representation's parent adaptation element
  * @property {?number} channelsCount
  *   The count of the audio track channels.
  * @property {?number} audioSamplingRate
@@ -395,6 +400,68 @@ shaka.extern.BufferedInfo;
  * @exportDoc
  */
 shaka.extern.Track;
+
+/**
+ * @typedef {{
+ *   active: boolean,
+ *   language: string,
+ *   label: ?string,
+ *   mimeType: ?string,
+ *   codecs: ?string,
+ *   primary: boolean,
+ *   roles: !Array<string>,
+ *   accessibilityPurpose: ?shaka.media.ManifestParser.AccessibilityPurpose,
+ *   channelsCount: ?number,
+ *   audioSamplingRate: ?number,
+ *   spatialAudio: boolean,
+ *   originalLanguage: ?string
+ * }}
+ *
+ * @description
+ * An object describing a audio track.  This object should be treated as
+ * read-only as changing any values does not have any effect.
+ *
+ * @property {boolean} active
+ *   If true, this is the track being streamed (another track may be
+ *   visible/audible in the buffer).
+ *
+ * @property {string} language
+ *   The language of the track, or <code>'und'</code> if not given.  This value
+ *   is normalized as follows - language part is always lowercase and translated
+ *   to ISO-639-1 when possible, locale part is always uppercase,
+ *   i.e. <code>'en-US'</code>.
+ * @property {?string} label
+ *   The track label, which is unique text that should describe the track.
+ * @property {?string} mimeType
+ *   The MIME type of the content provided in the manifest.
+ * @property {?string} codecs
+ *   The audio codecs string provided in the manifest, if present.
+ * @property {boolean} primary
+ *   True indicates that this in the primary language for the content.
+ *   This flag is based on signals from the manifest.
+ *   This can be a useful hint about which language should be the default, and
+ *   indicates which track Shaka will use when the user's language preference
+ *   cannot be satisfied.
+ * @property {!Array<string>} roles
+ *   The roles of the track, e.g. <code>'main'</code>, <code>'caption'</code>,
+ *   or <code>'commentary'</code>.
+ * @property {?shaka.media.ManifestParser.AccessibilityPurpose
+ *           } accessibilityPurpose
+ *   The DASH accessibility descriptor, if one was provided for this track.
+ * @property {?number} channelsCount
+ *   The count of the audio track channels.
+ * @property {?number} audioSamplingRate
+ *   Specifies the maximum sampling rate of the content.
+ * @property {boolean} spatialAudio
+ *   True indicates that the content has spatial audio.
+ *   This flag is based on signals from the manifest.
+ * @property {?string} originalLanguage
+ *   The original language of the track, if any, as it appeared in the original
+ *   manifest.  This is the exact value provided in the manifest; for normalized
+ *   value use <code>language</code> property.
+ * @exportDoc
+ */
+shaka.extern.AudioTrack;
 
 
 /**
@@ -671,6 +738,7 @@ shaka.extern.HLSInterstitial;
  *   startTime: number,
  *   endTime: number,
  *   id: string,
+ *   timescale: number,
  *   eventElement: Element,
  *   eventNode: ?shaka.extern.xml.Node
  * }}
@@ -690,6 +758,8 @@ shaka.extern.HLSInterstitial;
  *   The presentation time (in seconds) that the region should end.
  * @property {string} id
  *   Specifies an identifier for this instance of the region.
+ * @property {number} timescale
+ *   Provides the timescale, in ticks per second.
  * @property {Element} eventElement
  *   <b>DEPRECATED</b>: Use eventNode instead.
  *   The XML element that defines the Event.
@@ -698,6 +768,62 @@ shaka.extern.HLSInterstitial;
  * @exportDoc
  */
 shaka.extern.TimelineRegionInfo;
+
+
+/**
+ * @typedef {{
+ *   schemeIdUri: string,
+ *   startTime: number,
+ *   endTime: number,
+ *   id: string,
+ *   emsg: shaka.extern.EmsgInfo
+ * }}
+ *
+ * @description
+ * Contains information about a region of the timeline that will cause an event
+ * to be raised when the playhead enters or exits it.
+ *
+ * @property {string} schemeIdUri
+ *   Identifies the metadata type.
+ * @property {number} startTime
+ *   The presentation time (in seconds) that the region should start.
+ * @property {number} endTime
+ *   The presentation time (in seconds) that the region should end.
+ * @property {string} id
+ *   Specifies an identifier for this instance of the region.
+ * @property {shaka.extern.EmsgInfo} emsg
+ *   Specifies the EMSG info.
+ * @exportDoc
+ */
+shaka.extern.EmsgTimelineRegionInfo;
+
+
+/**
+ * @typedef {{
+ *   schemeIdUri: string,
+ *   startTime: number,
+ *   endTime: number,
+ *   id: string,
+ *   payload: shaka.extern.MetadataFrame
+ * }}
+ *
+ * @description
+ * Contains information about a region of the timeline that will cause an event
+ * to be raised when the playhead enters or exits it.
+ *
+ * @property {string} schemeIdUri
+ *   Identifies the metadata type.
+ * @property {number} startTime
+ *   The presentation time (in seconds) that the region should start.
+ * @property {number} endTime
+ *   The presentation time (in seconds) that the region should end.
+ * @property {string} id
+ *   Specifies an identifier for this instance of the region.
+ * @property {shaka.extern.MetadataFrame} payload
+ *   Specifies the metadata frame.
+ * @exportDoc
+ */
+shaka.extern.MetadataTimelineRegionInfo;
 
 /**
  * @typedef {{
@@ -1080,7 +1206,6 @@ shaka.extern.xml.Node;
 /**
  * @typedef {{
  *   clockSyncUri: string,
- *   ignoreDrmInfo: boolean,
  *   disableXlinkProcessing: boolean,
  *   xlinkFailGracefully: boolean,
  *   ignoreMinBufferTime: boolean,
@@ -1095,9 +1220,7 @@ shaka.extern.xml.Node;
  *   sequenceMode: boolean,
  *   multiTypeVariantsAllowed: boolean,
  *   useStreamOnceInPeriodFlattening: boolean,
- *   updatePeriod: number,
- *   enableFastSwitching: boolean,
- *   ignoreSupplementalCodecs: boolean
+ *   enableFastSwitching: boolean
  * }}
  *
  * @property {string} clockSyncUri
@@ -1106,12 +1229,6 @@ shaka.extern.xml.Node;
  *   URI will be used to determine the current time.
  *   <br>
  *   Defaults to <code>''</code>.
- * @property {boolean} ignoreDrmInfo
- *   If true will cause DASH parser to ignore DRM information specified
- *   by the manifest and treat it as if it signaled no particular key
- *   system and contained no init data.
- *   <br>
- *   Defaults to <code>false</code>.
  * @property {boolean} disableXlinkProcessing
  *   If true, xlink-related processing will be disabled.
  *   <br>
@@ -1191,21 +1308,10 @@ shaka.extern.xml.Node;
  *   between periods.
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {number} updatePeriod
- *   Override the minimumUpdatePeriod of the manifest. The value is in seconds.
- *   If the value is greater than the minimumUpdatePeriod, it will update the
- *   manifest less frequently. If you update the value during for a dynamic
- *   manifest, it will directly trigger a new download of the manifest.
- *   <br>
- *   Defaults to <code>-1</code>.
  * @property {boolean} enableFastSwitching
  *   If false, disables fast switching track recognition.
  *   <br>
  *   Defaults to <code>true</code>.
- * @property {boolean} ignoreSupplementalCodecs
- *   If true, ignores supplemental codecs.
- *   <br>
- *   Defaults to <code>false</code>.
  * @exportDoc
  */
 shaka.extern.DashManifestConfiguration;
@@ -1226,8 +1332,7 @@ shaka.extern.DashManifestConfiguration;
  *   disableCodecGuessing: boolean,
  *   disableClosedCaptionsDetection: boolean,
  *   allowLowLatencyByteRangeOptimization: boolean,
- *   updatePeriod: number,
- *   ignoreSupplementalCodecs: boolean
+ *   allowRangeRequestsToGuessMimeType: boolean
  * }}
  *
  * @property {boolean} ignoreTextStreamFailures
@@ -1313,16 +1418,9 @@ shaka.extern.DashManifestConfiguration;
  *   https://www.akamai.com/blog/performance/-using-ll-hls-with-byte-range-addressing-to-achieve-interoperabi
  *   <br>
  *   Defaults to <code>true</code>.
- * @property {number} updatePeriod
- *   Override the update period of the playlist. The value is in seconds.
- *   If the value is less than 0, the period will be determined based on the
- *   segment length.  If the value is greater than 0, it will update the target
- *   duration.  If you update the value during the live, it will directly
- *   trigger a new download of the manifest.
- *   <br>
- *   Defaults to <code>-1</code>.
- * @property {boolean} ignoreSupplementalCodecs
- *   If true, ignores supplemental codecs.
+ * @property {boolean} allowRangeRequestsToGuessMimeType
+ *   If set to true, the HLS parser will use range request (only first byte) to
+ *   guess the mime type.
  *   <br>
  *   Defaults to <code>false</code>.
  * @exportDoc
@@ -1375,7 +1473,10 @@ shaka.extern.MssManifestConfiguration;
  *   hls: shaka.extern.HlsManifestConfiguration,
  *   mss: shaka.extern.MssManifestConfiguration,
  *   raiseFatalErrorOnManifestUpdateRequestFailure: boolean,
- *   continueLoadingWhenPaused: boolean
+ *   continueLoadingWhenPaused: boolean,
+ *   ignoreSupplementalCodecs: boolean,
+ *   updatePeriod: number,
+ *   ignoreDrmInfo: boolean
  * }}
  *
  * @property {shaka.extern.RetryParameters} retryParameters
@@ -1437,6 +1538,31 @@ shaka.extern.MssManifestConfiguration;
  *   the video is paused.
  *   <br>
  *   Defaults to <code>true</code>.
+ * @property {boolean} ignoreSupplementalCodecs
+ *   If true, ignores supplemental codecs.
+ *   <br>
+ *   Defaults to <code>false</code>.
+ * @property {number} updatePeriod
+ *   For DASH:
+ *   Override the minimumUpdatePeriod of the manifest. The value is in seconds.
+ *   If the value is greater than the minimumUpdatePeriod, it will update the
+ *   manifest less frequently. If you update the value during for a dynamic
+ *   manifest, it will directly trigger a new download of the manifest.
+ *   <br>
+ *   For HLS:
+ *   Override the update period of the playlist. The value is in seconds.
+ *   If the value is less than 0, the period will be determined based on the
+ *   segment length.  If the value is greater than 0, it will update the target
+ *   duration.  If you update the value during the live, it will directly
+ *   trigger a new download of the manifest.
+ *   <br>
+ *   Defaults to <code>-1</code>.
+ * @property {boolean} ignoreDrmInfo
+ *   If true will cause DASH/HLS parser to ignore DRM information specified
+ *   by the manifest and treat it as if it signaled no particular key
+ *   system and contained no init data.
+ *   <br>
+ *   Defaults to <code>false</code>.
  * @exportDoc
  */
 shaka.extern.ManifestConfiguration;
@@ -1603,7 +1729,9 @@ shaka.extern.LiveSyncConfiguration;
  *   loadTimeout: number,
  *   clearDecodingCache: boolean,
  *   dontChooseCodecs: boolean,
- *   shouldFixTimestampOffset: boolean
+ *   shouldFixTimestampOffset: boolean,
+ *   avoidEvictionOnQuotaExceededError: boolean,
+ *   crossBoundaryStrategy: shaka.config.CrossBoundaryStrategy
  * }}
  *
  * @description
@@ -1780,7 +1908,7 @@ shaka.extern.LiveSyncConfiguration;
  *   ahead of playhead in parallel.
  *   If <code>0</code>, the segments will be fetched sequentially.
  *   <br>
- *   Defaults to <code>0</code>.
+ *   Defaults to <code>1</code>.
  * @property {!Array<string>} prefetchAudioLanguages
  *   The audio languages to prefetch.
  *   <br>
@@ -1855,6 +1983,16 @@ shaka.extern.LiveSyncConfiguration;
  *   <br>
  *   Defaults to <code>false</code> except on Tizen, WebOS whose default value
  *   is <code>true</code>.
+ * @property {boolean} avoidEvictionOnQuotaExceededError
+ *   Avoid evict content on QuotaExceededError.
+ *   <br>
+ *   Defaults to <code>false</code>.
+ * @property {shaka.config.CrossBoundaryStrategy} crossBoundaryStrategy
+ *   Allows MSE to be reset when crossing a boundary. Optionally, we can stop
+ *   resetting MSE when MSE passed an encrypted boundary.
+ *   Defaults to <code>KEEP</code> except on Tizen 3 where the default value
+ *   is <code>RESET_TO_ENCRYPTED</code> and WebOS 3 where the default value
+ *   is <code>RESET</code>.
  * @exportDoc
  */
 shaka.extern.StreamingConfiguration;
@@ -1933,20 +2071,20 @@ shaka.extern.MediaSourceConfiguration;
  *   IMA on platforms that do not support multiple video elements.
  *   <br>
  *   Defaults to <code>false</code> except on Tizen, WebOS, Chromecast,
- *   Hisense, PlayStation 4, PlayStation5, Xbox whose default value is
+ *   Hisense, PlayStation 4, PlayStation5, Xbox, Vizio whose default value is
  *   <code>true</code>.
  * @property {boolean} skipPlayDetection
  *   If this is true, we will load Client Side ads without waiting for a play
  *   event.
  *   <br>
  *   Defaults to <code>false</code> except on Tizen, WebOS, Chromecast,
- *   Hisense, PlayStation 4, PlayStation5, Xbox whose default value is
+ *   Hisense, PlayStation 4, PlayStation5, Xbox, Vizio whose default value is
  *   <code>true</code>.
  * @property {boolean} supportsMultipleMediaElements
  *   If this is true, the browser supports multiple media elements.
  *   <br>
  *   Defaults to <code>true</code> except on Tizen, WebOS, Chromecast,
- *   Hisense, PlayStation 4, PlayStation5, Xbox whose default value is
+ *   Hisense, PlayStation 4, PlayStation5, Xbox, Vizio whose default value is
  *   <code>false</code>.
  * @property {boolean} disableHLSInterstitial
  *   If this is true, we ignore HLS interstitial events.
@@ -2293,7 +2431,8 @@ shaka.extern.OfflineConfiguration;
 
 /**
  * @typedef {{
- *   captionsUpdatePeriod: number
+ *   captionsUpdatePeriod: number,
+ *   fontScaleFactor: number
  * }}
  *
  * @description
@@ -2303,7 +2442,10 @@ shaka.extern.OfflineConfiguration;
  *   The number of seconds to see if the captions should be updated.
  *   <br>
  *   Defaults to <code>0.25</code>.
- *
+ * @property {number} fontScaleFactor
+ *   The font scale factor used to increase or decrease the font size.
+ *   <br>
+ *   Defaults to <code>1</code>.
  * @exportDoc
  */
 shaka.extern.TextDisplayerConfiguration;
@@ -2414,14 +2556,17 @@ shaka.extern.TextDisplayerConfiguration;
  *   Defaults to <code>''</code>.
  * @property {!Array<string>} preferredVideoCodecs
  *   The list of preferred video codecs, in order of highest to lowest priority.
+ *   This is used to do a filtering of the variants available for the player.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {!Array<string>} preferredAudioCodecs
  *   The list of preferred audio codecs, in order of highest to lowest priority.
+ *   This is used to do a filtering of the variants available for the player.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {!Array<string>} preferredTextFormats
  *   The list of preferred text formats, in order of highest to lowest priority.
+ *   This is used to do a filtering of the text tracks available for the player.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {number} preferredAudioChannelCount
@@ -2447,6 +2592,7 @@ shaka.extern.TextDisplayerConfiguration;
  * @property {!Array<string>} preferredDecodingAttributes
  *   The list of preferred attributes of decodingInfo, in the order of their
  *   priorities.
+ *   This is used to do a filtering of the variants available for the player.
  *   <br>
  *   Defaults to <code>[]</code>.
  * @property {boolean} preferForcedSubs
@@ -2516,7 +2662,9 @@ shaka.extern.LanguageRole;
  *   duration: number,
  *   uris: !Array<string>,
  *   width: number,
- *   sprite: boolean
+ *   sprite: boolean,
+ *   mimeType: ?string,
+ *   codecs: ?string
  * }}
  *
  * @property {shaka.media.SegmentReference} segment
@@ -2544,6 +2692,10 @@ shaka.extern.LanguageRole;
  *    The thumbnail width in px.
  * @property {boolean} sprite
  *    Indicate if the thumbnail is a sprite.
+ * @property {?string} mimeType
+ *   The thumbnail MIME type, if present.
+ * @property {?string} codecs
+ *   The thumbnail codecs, if present.
  * @exportDoc
  */
 shaka.extern.Thumbnail;

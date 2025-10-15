@@ -141,7 +141,7 @@ shakaDemo.SelectInput = class extends shakaDemo.Input {
       option.textContent = values[value];
       option.value = value;
       this.input_.appendChild(option);
-    }
+    };
   }
 };
 

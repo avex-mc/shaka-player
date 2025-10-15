@@ -4,7 +4,9 @@ adblocker
 audiolang
 audiotrackchange
 audiotrackchanged
+audiotrackschanged
 autoplaying
+boundarycrossed
 captionselectionupdated
 caststatuschanged
 customwarning
@@ -160,6 +162,7 @@ linksource
 longname
 
 # 3rd party
+APPSTB
 Bitcodin
 Brightcove
 Broadpeak
@@ -192,6 +195,8 @@ Tizen
 Uplynk
 Verimatrix
 Vidaa
+Vizio
+VIZIO
 Vnova
 Widevine
 wiseplay
@@ -417,6 +422,7 @@ eyex
 eyey
 eyez
 fovy
+halfequirectangular
 hequ
 hfov
 highp

@@ -448,12 +448,22 @@ describe('StreamingEngine', () => {
       return Promise.resolve();
     });
 
+    const defaultConfig =
+        shaka.util.PlayerConfiguration.createDefault().streaming;
+
     if (!config) {
-      config = shaka.util.PlayerConfiguration.createDefault().streaming;
+      config = defaultConfig;
       config.rebufferingGoal = 2;
       config.bufferingGoal = 5;
       config.bufferBehind = Infinity;
       config.maxDisabledTime = 0; // Do not disable stream by default
+      // We don't want to evict segments in tests where there is no need to
+      // test them.
+      config.evictionGoal = 30;
+    }
+
+    if (defaultConfig.segmentPrefetchLimit == config.segmentPrefetchLimit) {
+      config.segmentPrefetchLimit = 0; // Do not prefetch segments by default
     }
 
     goog.asserts.assert(
@@ -463,6 +473,7 @@ describe('StreamingEngine', () => {
       getPresentationTime: () => presentationTimeInSeconds,
       getBandwidthEstimate: Util.spyFunc(getBandwidthEstimate),
       getPlaybackRate: Util.spyFunc(getPlaybackRate),
+      video: shaka.test.UiUtils.createVideoElement(),
       mediaSourceEngine: mediaSourceEngine,
       netEngine: /** @type {!shaka.net.NetworkingEngine} */(netEngine),
       onError: Util.spyFunc(onError),

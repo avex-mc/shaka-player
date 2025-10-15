@@ -77,11 +77,11 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
     /** @private {!Array} */
     this.skippedStats_ = ['stateHistory', 'switchHistory'];
 
-    /** @private {!Object<string, number>} */
+    /** @private {!shaka.extern.Stats} */
     this.currentStats_ = this.player.getStats();
 
-    /** @private {!Object<string, HTMLElement>} */
-    this.displayedElements_ = {};
+    /** @private {!Map<string, HTMLElement>} */
+    this.displayedElements_ = new Map();
 
 
     const parsePx = (name) => {
@@ -127,7 +127,9 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
 
     const parseBytes = (name) => {
       const bytes = parseInt(this.currentStats_[name], 10);
-      if (bytes > 1e6) {
+      if (bytes > 2 * 1e9) {
+        return (bytes / 1e9).toFixed(2) + 'GB';
+      } else if (bytes > 1e6) {
         return (bytes / 1e6).toFixed(2) + 'MB';
       } else if (bytes > 1e3) {
         return (bytes / 1e3).toFixed(2) + 'KB';
@@ -136,33 +138,32 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
       }
     };
 
-    /** @private {!Object<string, function(string): string>} */
-    this.parseFrom_ = {
-      'width': parsePx,
-      'height': parsePx,
-      'completionPercent': parsePercent,
-      'bufferingTime': parseSeconds,
-      'drmTimeSeconds': parseSeconds,
-      'licenseTime': parseSeconds,
-      'liveLatency': parseSeconds,
-      'loadLatency': parseSeconds,
-      'manifestTimeSeconds': parseSeconds,
-      'estimatedBandwidth': parseBits,
-      'streamBandwidth': parseBits,
-      'maxSegmentDuration': parseTime,
-      'pauseTime': parseTime,
-      'playTime': parseTime,
-      'corruptedFrames': parseFrames,
-      'decodedFrames': parseFrames,
-      'droppedFrames': parseFrames,
-      'stallsDetected': parseStalls,
-      'gapsJumped': parseGaps,
-      'manifestSizeBytes': parseBytes,
-      'bytesDownloaded': parseBytes,
-      'nonFatalErrorCount': parseErrors,
-      'manifestPeriodCount': parsePeriods,
-      'manifestGapCount': parseGaps,
-    };
+    /** @private {!Map<string, function(string): string>} */
+    this.parseFrom_ = new Map()
+        .set('width', parsePx)
+        .set('height', parsePx)
+        .set('completionPercent', parsePercent)
+        .set('bufferingTime', parseSeconds)
+        .set('drmTimeSeconds', parseSeconds)
+        .set('licenseTime', parseSeconds)
+        .set('liveLatency', parseSeconds)
+        .set('loadLatency', parseSeconds)
+        .set('manifestTimeSeconds', parseSeconds)
+        .set('estimatedBandwidth', parseBits)
+        .set('streamBandwidth', parseBits)
+        .set('maxSegmentDuration', parseTime)
+        .set('pauseTime', parseTime)
+        .set('playTime', parseTime)
+        .set('corruptedFrames', parseFrames)
+        .set('decodedFrames', parseFrames)
+        .set('droppedFrames', parseFrames)
+        .set('stallsDetected', parseStalls)
+        .set('gapsJumped', parseGaps)
+        .set('manifestSizeBytes', parseBytes)
+        .set('bytesDownloaded', parseBytes)
+        .set('nonFatalErrorCount', parseErrors)
+        .set('manifestPeriodCount', parsePeriods)
+        .set('manifestGapCount', parseGaps);
 
     /** @private {shaka.util.Timer} */
     this.timer_ = new shaka.util.Timer(() => {
@@ -191,8 +192,6 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
 
   /** @private */
   onClick_() {
-    shaka.ui.Utils.setDisplay(this.parent, false);
-
     if (this.container_.classList.contains('shaka-hidden')) {
       this.icon_.textContent =
           shaka.ui.Enums.MaterialDesignIcons.STATISTICS_OFF;
@@ -233,10 +232,10 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
     section.appendChild(label);
 
     const value = shaka.util.Dom.createHTMLElement('span');
-    value.textContent = this.parseFrom_[name](name);
+    value.textContent = this.parseFrom_.get(name)(name);
     section.appendChild(value);
 
-    this.displayedElements_[name] = value;
+    this.displayedElements_.set(name, value);
 
     return section;
   }
@@ -271,8 +270,8 @@ shaka.ui.StatisticsButton = class extends shaka.ui.Element {
     this.currentStats_ = this.player.getStats();
 
     for (const name of this.statisticsList_) {
-      const element = this.displayedElements_[name];
-      element.textContent = this.parseFrom_[name](name);
+      const element = this.displayedElements_.get(name);
+      element.textContent = this.parseFrom_.get(name)(name);
       if (element && element.parentElement) {
         shaka.ui.Utils.setDisplay(element.parentElement,
             !isNaN(this.currentStats_[name]));

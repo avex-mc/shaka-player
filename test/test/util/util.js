@@ -360,10 +360,6 @@ shaka.test.Util = class {
       const baseMimeType = MimeUtils.getBasicType(mimetype);
       const codecs = StreamUtils.getCorrectAudioCodecs(
           MimeUtils.getCodecs(mimetype), baseMimeType);
-      if (codecs == 'ac-3' && shaka.util.Platform.isTizen()) {
-        // AC3 is flaky in some Tizen devices, so we need omit it for now.
-        return false;
-      }
       // AudioConfiguration
       mediaDecodingConfig.audio = {
         contentType: MimeUtils.getFullOrConvertedType(
@@ -373,6 +369,11 @@ shaka.test.Util = class {
       const codecs = StreamUtils.getCorrectVideoCodecs(
           MimeUtils.getCodecs(mimetype));
       const baseMimeType = MimeUtils.getBasicType(mimetype);
+      if (codecs.startsWith('hvc1.') &&
+          shaka.util.Platform.isWindows() && shaka.util.Platform.isFirefox()) {
+        // It seems that HEVC on Firefox Windows is incomplete.
+        return false;
+      }
       // VideoConfiguration
       mediaDecodingConfig.video = {
         contentType: MimeUtils.getFullOrConvertedType(

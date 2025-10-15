@@ -115,6 +115,9 @@ adManager.addCustomInterstitial({
   timelineRange: false,
   loop: false,
   overlay: null,
+  displayOnBackground: false,
+  currentVideo: null,
+  background: null,
 });
 ```
 
@@ -152,13 +155,19 @@ player.addEventListener('timelineregionadded', (e) => {
     post: false,
     timelineRange: player.isLive(), // If true, the ad will appear as a range on the timeline.
     loop: false,
-    overlay: null
+    overlay: null,
+    displayOnBackground: false,
+    currentVideo: null,
+    background: null,
   });
 });
 ```
 
 
 ##### Custom Overlay Interstitials
+
+Image, video (progressive or manifest) or website overlays are supported.
+
 
 Example:
 
@@ -203,6 +212,131 @@ adManager.addCustomInterstitial({
       y: 540, // Pixels
     },
   },
+  displayOnBackground: false,
+  currentVideo: null,
+  background: null,
+});
+```
+
+Example of L-Shape format ad experience:
+```js
+const adManager = player.getAdManager();
+const video = document.getElementById('video');
+const ui = video['ui'];
+// If you're using a non-UI build, this is the div you'll need to create
+// for your layout.  The ad manager will clear this div, when it unloads, so
+// don't pass in a div that contains non-ad elements.
+const container = video.ui.getControls().getClientSideAdContainer();
+adManager.initInterstitial(container, player, video);
+adManager.addCustomInterstitial({
+  id: null,
+  groupId: null,
+  startTime: 10,
+  endTime: null,
+  uri: 'YOUR_URL',
+  mimeType: null,
+  isSkippable: true,
+  skipOffset: 10,
+  skipFor: null,
+  canJump: false,
+  resumeOffset: null,
+  playoutLimit: null,
+  once: true,
+  pre: false,
+  post: false,
+  timelineRange: false,
+  loop: false,
+  overlay: {
+    viewport: {
+      x: 1920,
+      y: 1080,
+    },
+    topLeft: {
+      x: 0,
+      y: 0,
+    },
+    size: {
+      x: 1920,
+      y: 1080,
+    },
+  },
+  displayOnBackground: true,
+  currentVideo: {
+    viewport: {
+      x: 1920,
+      y: 1080,
+    },
+    topLeft: {
+      x: 0,
+      y: 0,
+    },
+    size: {
+      x: 960,
+      y: 540,
+    },
+  },
+  background: null,
+});
+```
+
+Example of double box format ad experience:
+```js
+const adManager = player.getAdManager();
+const video = document.getElementById('video');
+const ui = video['ui'];
+// If you're using a non-UI build, this is the div you'll need to create
+// for your layout.  The ad manager will clear this div, when it unloads, so
+// don't pass in a div that contains non-ad elements.
+const container = video.ui.getControls().getClientSideAdContainer();
+adManager.initInterstitial(container, player, video);
+adManager.addCustomInterstitial({
+  id: null,
+  groupId: null,
+  startTime: 10,
+  endTime: null,
+  uri: 'YOUR_URL',
+  mimeType: null,
+  isSkippable: true,
+  skipOffset: 10,
+  skipFor: null,
+  canJump: false,
+  resumeOffset: null,
+  playoutLimit: null,
+  once: true,
+  pre: false,
+  post: false,
+  timelineRange: false,
+  loop: false,
+  overlay: {
+    viewport: {
+      x: 1920, // Pixels
+      y: 1080, // Pixels
+    },
+    topLeft: {
+      x: 960, // Pixels
+      y: 270, // Pixels
+    },
+    size: {
+      x: 960, // Pixels
+      y: 540, // Pixels
+    },
+  },
+  displayOnBackground: true,
+  currentVideo: {
+    viewport: {
+      x: 1920, // Pixels
+      y: 1080, // Pixels
+    },
+    topLeft: {
+      x: 160, // Pixels
+      y: 360, // Pixels
+    },
+    size: {
+      x: 640, // Pixels
+      y: 360, // Pixels
+    },
+  },
+  background: 'content-box radial-gradient(crimson, skyblue)',
 });
 ```
 

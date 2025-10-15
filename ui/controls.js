@@ -126,11 +126,16 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     this.fadeControlsTimer_ = new shaka.util.Timer(() => {
       this.controlsContainer_.removeAttribute('shown');
 
+      if (this.contextMenu_) {
+        this.contextMenu_.closeMenu();
+      }
+
       // If there's an overflow menu open, keep it this way for a couple of
       // seconds in case a user immediately initiates another mouse move to
       // interact with the menus. If that didn't happen, go ahead and hide
       // the menus.
-      this.hideSettingsMenusTimer_.tickAfter(/* seconds= */ 2);
+      this.hideSettingsMenusTimer_.tickAfter(
+          /* seconds= */ this.config_.closeMenusDelay);
     });
 
     /**
@@ -845,7 +850,11 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
   showAdUI() {
     shaka.ui.Utils.setDisplay(this.adPanel_, true);
     shaka.ui.Utils.setDisplay(this.clientAdContainer_, true);
-    this.controlsContainer_.setAttribute('ad-active', 'true');
+    if (this.ad_.hasCustomClick()) {
+      this.controlsContainer_.setAttribute('ad-active', 'true');
+    } else {
+      this.controlsContainer_.removeAttribute('ad-active');
+    }
   }
 
   /** @export */
@@ -861,6 +870,13 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
   playPausePresentation() {
     if (!this.enabled_) {
       return;
+    }
+
+    if (this.ad_) {
+      this.playPauseAd();
+      if (this.ad_.isLinear()) {
+        return;
+      }
     }
 
     if (!this.video_.duration) {
@@ -954,9 +970,9 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     // setEnabledShakaControls:
     this.videoContainer_.setAttribute('shaka-controls', 'true');
 
-    this.eventManager_.listen(this.controlsContainer_, 'touchstart', (e) => {
+    this.eventManager_.listen(this.controlsContainer_, 'touchend', (e) => {
       this.onContainerTouch_(e);
-    }, {passive: false});
+    });
 
     this.eventManager_.listen(this.controlsContainer_, 'click', () => {
       this.onContainerClick_();
@@ -1296,6 +1312,10 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       }
     };
     const updatePositionState = () => {
+      if (this.ad_ && this.ad_.isLinear()) {
+        clearPositionState();
+        return;
+      }
       const seekRange = this.player_.seekRange();
       let duration = seekRange.end - seekRange.start;
       const position = parseFloat(
@@ -1306,15 +1326,19 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
         duration = Infinity;
       }
       try {
-        if ((this.ad_ && this.ad_.isLinear())) {
-          navigator.mediaSession.setPositionState();
-        } else {
-          navigator.mediaSession.setPositionState({
-            duration: Math.max(0, duration),
-            playbackRate: this.video_.playbackRate,
-            position: Math.max(0, position),
-          });
-        }
+        navigator.mediaSession.setPositionState({
+          duration: Math.max(0, duration),
+          playbackRate: this.video_.playbackRate,
+          position: Math.max(0, position),
+        });
+      } catch (error) {
+        shaka.log.v2(
+            'setPositionState in media session is not supported.');
+      }
+    };
+    const clearPositionState = () => {
+      try {
+        navigator.mediaSession.setPositionState();
       } catch (error) {
         shaka.log.v2(
             'setPositionState in media session is not supported.');
@@ -1322,29 +1346,37 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     };
     const commonHandler = (details) => {
       const keyboardSeekDistance = this.config_.keyboardSeekDistance;
-      const seekRange = this.player_.seekRange();
       switch (details.action) {
         case 'pause':
-          this.onPlayPauseClick_();
+          this.playPausePresentation();
           break;
         case 'play':
-          this.onPlayPauseClick_();
+          this.playPausePresentation();
           break;
         case 'seekbackward':
+          if (details.seekOffset && !isFinite(details.seekOffset)) {
+            break;
+          }
           if (!this.ad_ || !this.ad_.isLinear()) {
             this.seek_(this.seekBar_.getValue() -
                 (details.seekOffset || keyboardSeekDistance));
           }
           break;
         case 'seekforward':
+          if (details.seekOffset && !isFinite(details.seekOffset)) {
+            break;
+          }
           if (!this.ad_ || !this.ad_.isLinear()) {
             this.seek_(this.seekBar_.getValue() +
                 (details.seekOffset || keyboardSeekDistance));
           }
           break;
         case 'seekto':
+          if (details.seekTime && !isFinite(details.seekTime)) {
+            break;
+          }
           if (!this.ad_ || !this.ad_.isLinear()) {
-            this.seek_(seekRange.start + details.seekTime);
+            this.seek_(this.player_.seekRange().start + details.seekTime);
           }
           break;
         case 'stop':
@@ -1369,10 +1401,25 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       addMediaSessionHandler('enterpictureinpicture', commonHandler);
     }
 
-    this.eventManager_.listen(this.video_, 'timeupdate', () => {
-      updatePositionState();
-    });
+    const playerLoaded = () => {
+      if (this.player_.isLive() || this.player_.seekRange().start != 0) {
+        updatePositionState();
+        this.eventManager_.listen(
+            this.video_, 'timeupdate', updatePositionState);
+      } else {
+        clearPositionState();
+      }
+    };
+    const playerUnloading = () => {
+      this.eventManager_.unlisten(
+          this.video_, 'timeupdate', updatePositionState);
+    };
 
+    if (this.player_.isFullyLoaded()) {
+      playerLoaded();
+    }
+    this.eventManager_.listen(this.player_, 'loaded', playerLoaded);
+    this.eventManager_.listen(this.player_, 'unloading', playerUnloading);
     this.eventManager_.listen(this.player_, 'metadata', (event) => {
       const payload = event['payload'];
       if (!payload) {
@@ -1634,19 +1681,8 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     if (this.anySettingsMenusAreOpen()) {
       this.hideSettingsMenusTimer_.tickNow();
     } else if (this.config_.singleClickForPlayAndPause) {
-      this.onPlayPauseClick_();
+      this.playPausePresentation();
     }
-  }
-
-  /** @private */
-  onPlayPauseClick_() {
-    if (this.ad_) {
-      this.playPauseAd();
-      if (this.ad_.isLinear()) {
-        return;
-      }
-    }
-    this.playPausePresentation();
   }
 
   /** @private */
@@ -1757,7 +1793,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       // Pause or play by pressing space on the seek bar.
       case ' ':
         if (isSeekBar) {
-          this.onPlayPauseClick_();
+          this.playPausePresentation();
         }
         break;
     }
@@ -1960,7 +1996,10 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
    * @export
    */
   hideUI() {
-    this.onMouseLeave_();
+    // Stop the timer and invoke the callback now to hide the controls.  If we
+    // don't, the opacity style we set in onMouseMove_ will continue to override
+    // the opacity in CSS and force the controls to stay visible.
+    this.mouseStillTimer_.tickNow();
   }
 
   /**

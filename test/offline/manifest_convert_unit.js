@@ -580,6 +580,7 @@ describe('ManifestConverter', () => {
       type: streamDb.type,
       primary: streamDb.primary,
       trickModeVideo: null,
+      dependencyStream: null,
       emsgSchemeIdUris: null,
       roles: streamDb.roles,
       forced: streamDb.forced,
@@ -595,6 +596,7 @@ describe('ManifestConverter', () => {
       fullMimeTypes: new Set([shaka.util.MimeUtils.getFullType(
           streamDb.mimeType, streamDb.codecs)]),
       isAudioMuxedInVideo: streamDb.isAudioMuxedInVideo,
+      baseOriginalId: null,
     };
 
     expect(stream).toEqual(expectedStream);

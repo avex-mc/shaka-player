@@ -317,6 +317,60 @@ describe('HlsParser', () => {
     expect(actual).toEqual(manifest);
   });
 
+  it('Detect spatial audio in Dolby AC-4', async () => {
+    const master = [
+      '#EXTM3U\n',
+      '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="aud1",LANGUAGE="eng",',
+      'CHANNELS="10/ATMOS",SAMPLE-RATE="48000",URI="audio"\n',
+      '#EXT-X-STREAM-INF:BANDWIDTH=200,CODECS="avc1,ac-4",',
+      'RESOLUTION=960x540,FRAME-RATE=60,AUDIO="aud1"\n',
+      'video\n',
+    ].join('');
+
+    const media = [
+      '#EXTM3U\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-MAP:URI="init.mp4",BYTERANGE="616@0"\n',
+      '#EXTINF:5,\n',
+      '#EXT-X-BYTERANGE:121090@616\n',
+      'main.mp4',
+    ].join('');
+
+    const manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+      manifest.sequenceMode = sequenceMode;
+      manifest.type = shaka.media.ManifestParser.HLS;
+      manifest.anyTimeline();
+      manifest.addPartialVariant((variant) => {
+        variant.language = 'en';
+        variant.bandwidth = 200;
+        variant.addPartialStream(ContentType.VIDEO, (stream) => {
+          stream.frameRate = 60;
+          stream.mime('video/mp4', 'avc1');
+          stream.size(960, 540);
+        });
+        variant.addPartialStream(ContentType.AUDIO, (stream) => {
+          stream.language = 'en';
+          stream.originalLanguage = 'eng';
+          stream.channelsCount = 10;
+          stream.audioSamplingRate = 48000;
+          stream.spatialAudio = true;
+          stream.mime('audio/mp4', 'ac-4');
+        });
+      });
+    });
+
+    fakeNetEngine
+        .setResponseText('test:/master', master)
+        .setResponseText('test:/audio', media)
+        .setResponseText('test:/video', media)
+        .setResponseValue('test:/init.mp4', initSegmentData)
+        .setResponseValue('test:/main.mp4', segmentData);
+
+    const actual = await parser.start('test:/master', playerInterface);
+    await loadAllStreamsFor(actual);
+    expect(actual).toEqual(manifest);
+  });
+
   it('prioritize AVERAGE-BANDWIDTH to BANDWIDTH', async () => {
     const master = [
       '#EXTM3U\n',
@@ -3714,6 +3768,49 @@ describe('HlsParser', () => {
     }
   });
 
+  it('does not construct DrmInfo with ignoreDrmInfo = true', async () => {
+    const master = [
+      '#EXTM3U\n',
+      '#EXT-X-STREAM-INF:BANDWIDTH=200,CODECS="avc1.4d401f",',
+      'RESOLUTION=960x540,FRAME-RATE=60\n',
+      'video\n',
+    ].join('');
+
+    const initDataBase64 =
+        'dGhpcyBpbml0IGRhdGEgY29udGFpbnMgaGlkZGVuIHNlY3JldHMhISE=';
+
+    const keyId = 'abc123';
+
+    const media = [
+      '#EXTM3U\n',
+      '#EXT-X-TARGETDURATION:6\n',
+      '#EXT-X-PLAYLIST-TYPE:VOD\n',
+      '#EXT-X-KEY:METHOD=SAMPLE-AES-CTR,',
+      'KEYID=0X' + keyId + ',',
+      'KEYFORMAT="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed",',
+      'URI="data:text/plain;base64,',
+      initDataBase64, '",\n',
+      '#EXT-X-MAP:URI="init.mp4"\n',
+      '#EXTINF:5,\n',
+      '#EXT-X-BYTERANGE:121090@616\n',
+      'main.mp4',
+    ].join('');
+
+    const manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+      manifest.anyTimeline();
+      manifest.addPartialVariant((variant) => {
+        variant.addPartialStream(ContentType.VIDEO, (stream) => {
+        });
+      });
+      manifest.sequenceMode = sequenceMode;
+      manifest.type = shaka.media.ManifestParser.HLS;
+    });
+
+    config.ignoreDrmInfo = true;
+    await testHlsParser(master, media, manifest);
+    expect(newDrmInfoSpy).not.toHaveBeenCalled();
+  });
+
   it('constructs DrmInfo for Widevine', async () => {
     const master = [
       '#EXTM3U\n',
@@ -6214,7 +6311,7 @@ describe('HlsParser', () => {
         .setResponseText('test:/video', media);
 
     const config = shaka.util.PlayerConfiguration.createDefault().manifest;
-    config.hls.ignoreSupplementalCodecs = true;
+    config.ignoreSupplementalCodecs = true;
     parser.configure(config);
 
     /** @type {shaka.extern.Manifest} */

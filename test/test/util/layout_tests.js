@@ -175,23 +175,16 @@ shaka.test.TextLayoutTests = class extends shaka.test.LayoutTests {
 
   /** @override */
   static async supported() {
+    // We only trust Safari for native text layout tests if explicitly flagged.
+    // We only do this in our lab, where we control device a11y settings that
+    // impact these tests heavily.
+    if (shaka.util.Platform.isApple() &&
+        !getClientArg('trustSafariNativeTextLayout')) {
+      return false;
+    }
+
     const baseSupported = await super.supported();
     if (!baseSupported) {
-      return false;
-    }
-
-    // Due to a Safari implementation bug, the browser only does the correct
-    // thing for a timing edge case on Safari 16+.  Skip the tests on earlier
-    // versions.
-    const safariVersion = shaka.util.Platform.safariVersion();
-    if (safariVersion && safariVersion < 16) {
-      return false;
-    }
-
-    // Due to updates in the rendering and/or default styles in Chrome, the
-    // screenshots for native rendering only match in Chrome 106+.
-    const chromeVersion = shaka.util.Platform.chromeVersion();
-    if (chromeVersion && chromeVersion < 106) {
       return false;
     }
 

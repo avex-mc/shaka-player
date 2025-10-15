@@ -540,28 +540,6 @@ describe('DashParser Manifest', () => {
     expect(stream.spatialAudio).toBe(true);
   });
 
-  it('Detects spatial audio by codec and bandwidth', async () => {
-    const source = [
-      '<MPD>',
-      '  <Period duration="PT30M">',
-      '    <AdaptationSet mimeType="audio/mp4" lang="\u2603">',
-      '      <Representation bandwidth="384000" codecs="ec-3">',
-      '        <BaseURL>http://example.com</BaseURL>',
-      '        <SegmentTemplate media="2.mp4" duration="1" />',
-      '      </Representation>',
-      '    </AdaptationSet>',
-      '  </Period>',
-      '</MPD>',
-    ].join('\n');
-
-    fakeNetEngine.setResponseText('dummy://foo', source);
-
-    /** @type {shaka.extern.Manifest} */
-    const manifest = await parser.start('dummy://foo', playerInterface);
-    const stream = manifest.variants[0].audio;
-    expect(stream.spatialAudio).toBe(true);
-  });
-
   it('correctly parses CEA-608 closed caption tags without channel numbers',
       async () => {
         const source = [
@@ -1033,6 +1011,60 @@ describe('DashParser Manifest', () => {
           shaka.util.Error.Code.DASH_DUPLICATE_REPRESENTATION_ID);
       await Dash.testFails(source, error);
     });
+  });
+
+  it('parses dependencyStream tracks', async () => {
+    const manifestText = [
+      '<MPD minBufferTime="PT75S">',
+      '  <Period id="1" duration="PT30S">',
+      '    <AdaptationSet id="1" mimeType="video/mp4">',
+      '      <Representation id="main" bandwidth="1" codecs="avc1.4d401f"',
+      '          bandwidth="2">',
+      '        <SegmentTemplate media="1.mp4" duration="1" />',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '    <AdaptationSet id="2" mimeType="video/mp4">',
+      '      <Representation id="enhance" dependencyId="main"',
+      '          bandwidth="1" codecs="avc1.4d401f">',
+      '        <SegmentTemplate media="2.mp4" duration="1" />',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', manifestText);
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+    expect(manifest.variants.length).toBe(2);
+    expect(manifest.textStreams.length).toBe(0);
+
+    let variant = manifest.variants[0];
+    expect(variant.bandwidth).toBe(2);
+    let video = variant && variant.video;
+    expect(video).toEqual(jasmine.objectContaining({
+      originalId: 'main',
+      type: shaka.util.ManifestParserUtils.ContentType.VIDEO,
+      bandwidth: 2,
+    }));
+    let dependencyStream = video && video.dependencyStream;
+    expect(dependencyStream).toBeNull();
+
+    variant = manifest.variants[1];
+    expect(variant.bandwidth).toBe(3);
+    video = variant && variant.video;
+    expect(video).toEqual(jasmine.objectContaining({
+      originalId: 'main',
+      type: shaka.util.ManifestParserUtils.ContentType.VIDEO,
+      bandwidth: 2,
+    }));
+    dependencyStream = video && video.dependencyStream;
+    expect(dependencyStream).toEqual(jasmine.objectContaining({
+      originalId: 'enhance',
+      type: shaka.util.ManifestParserUtils.ContentType.VIDEO,
+      bandwidth: 1,
+      baseOriginalId: 'main',
+    }));
   });
 
   it('parses trickmode tracks', async () => {
@@ -3736,7 +3768,7 @@ describe('DashParser Manifest', () => {
     fakeNetEngine.setResponseText('dummy://foo', manifestText);
 
     const config = shaka.util.PlayerConfiguration.createDefault().manifest;
-    config.dash.ignoreSupplementalCodecs = true;
+    config.ignoreSupplementalCodecs = true;
     parser.configure(config);
 
     /** @type {shaka.extern.Manifest} */

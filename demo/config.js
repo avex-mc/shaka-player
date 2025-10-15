@@ -224,14 +224,18 @@ shakaDemo.Config = class {
         .addBoolInput_('Enable segment-relative VTT Timing',
             'manifest.segmentRelativeVttTiming')
         .addBoolInput_('Continue loading when paused',
-            'manifest.continueLoadingWhenPaused');
+            'manifest.continueLoadingWhenPaused')
+        .addBoolInput_('Ignore supplemental codecs',
+            'manifest.ignoreSupplementalCodecs')
+        .addNumberInput_('Override the Update time of the manifest',
+            'manifest.updatePeriod')
+        .addBoolInput_('Ignore DRM Info', 'manifest.ignoreDrmInfo');
   }
 
   /** @private */
   addDashManifestSection_() {
     const docLink = this.resolveExternLink_('.ManifestConfiguration');
     this.addSection_('DASH Manifest', docLink)
-        .addBoolInput_('Ignore DASH DRM Info', 'manifest.dash.ignoreDrmInfo')
         .addBoolInput_('Auto-Correct DASH Drift',
             'manifest.dash.autoCorrectDrift')
         .addBoolInput_('Disable Xlink processing',
@@ -258,12 +262,8 @@ shakaDemo.Config = class {
             'manifest.dash.sequenceMode')
         .addBoolInput_('Use stream once in period flattening',
             'manifest.dash.useStreamOnceInPeriodFlattening')
-        .addNumberInput_('override the Update period of dash manifest',
-            'manifest.dash.updatePeriod')
         .addBoolInput_('Enable fast switching',
-            'manifest.dash.enableFastSwitching')
-        .addBoolInput_('Ignore supplemental codecs',
-            'manifest.dash.ignoreSupplementalCodecs');
+            'manifest.dash.enableFastSwitching');
   }
 
   /** @private */
@@ -291,10 +291,8 @@ shakaDemo.Config = class {
             'manifest.hls.disableClosedCaptionsDetection')
         .addBoolInput_('Allow LL-HLS byterange optimization',
             'manifest.hls.allowLowLatencyByteRangeOptimization')
-        .addNumberInput_('override the Update time of the manifest',
-            'manifest.hls.updatePeriod')
-        .addBoolInput_('Ignore supplemental codecs',
-            'manifest.hls.ignoreSupplementalCodecs');
+        .addBoolInput_('Allow range request to guess mime type',
+            'manifest.hls.allowRangeRequestsToGuessMimeType');
   }
 
   /** @private */
@@ -354,6 +352,9 @@ shakaDemo.Config = class {
     this.addSection_('Text displayer', docLink)
         .addNumberInput_('Captions update period',
             'textDisplayer.captionsUpdatePeriod',
+            /* canBeDecimal= */ true)
+        .addNumberInput_('Font scale factor',
+            'textDisplayer.fontScaleFactor',
             /* canBeDecimal= */ true);
   }
 
@@ -591,6 +592,13 @@ shakaDemo.Config = class {
     this.addSelectInput_('Preferred video layout', 'preferredVideoLayout',
         videoLayouts, videoLayoutsNames);
 
+    const strategyOptions = shaka.config.CrossBoundaryStrategy;
+    const strategyOptionsNames = {
+      'KEEP': 'Keep',
+      'RESET': 'Reset',
+      'RESET_TO_ENCRYPTED': 'Reset to encrypted',
+    };
+
     this.addBoolInput_('Start At Segment Boundary',
         'streaming.startAtSegmentBoundary')
         .addBoolInput_('Ignore Text Stream Failures',
@@ -608,7 +616,12 @@ shakaDemo.Config = class {
         .addBoolInput_('Don\'t choose codecs',
             'streaming.dontChooseCodecs')
         .addBoolInput_('Should fix timestampOffset',
-            'streaming.shouldFixTimestampOffset');
+            'streaming.shouldFixTimestampOffset')
+        .addBoolInput_('Avoid eviction on QuotaExceededError',
+            'streaming.avoidEvictionOnQuotaExceededError')
+        .addSelectInput_('Cross Boundary Strategy',
+            'streaming.crossBoundaryStrategy',
+            strategyOptions, strategyOptionsNames);
     this.addRetrySection_('streaming', 'Streaming Retry Parameters');
     this.addLiveSyncSection_();
   }
@@ -654,13 +667,14 @@ shakaDemo.Config = class {
 
   /** @private */
   addMediaSourceSection_() {
+    const docLink = this.resolveExternLink_('.MediaSourceConfiguration');
+
     const strategyOptions = shaka.config.CodecSwitchingStrategy;
     const strategyOptionsNames = {
       'RELOAD': 'reload',
       'SMOOTH': 'smooth',
     };
 
-    const docLink = this.resolveExternLink_('.MediaSourceConfiguration');
     this.addSection_('Media source', docLink)
         .addBoolInput_('Force Transmux', 'mediaSource.forceTransmux')
         .addBoolInput_('Insert fake encryption in init segments when needed ' +

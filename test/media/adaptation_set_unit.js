@@ -237,6 +237,7 @@ describe('AdaptationSet', () => {
       roles: roles,
       forced: false,
       trickModeVideo: null,
+      dependencyStream: null,
       type: '',
       accessibilityPurpose: null,
       external: false,
@@ -245,6 +246,7 @@ describe('AdaptationSet', () => {
       fullMimeTypes: new Set([shaka.util.MimeUtils.getFullType(
           mimeType, codecs.join(','))]),
       isAudioMuxedInVideo: false,
+      baseOriginalId: null,
     };
   }
 });

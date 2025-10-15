@@ -5,7 +5,7 @@
  */
 
 describe('RegionTimeline', () => {
-  /** @type {!shaka.media.RegionTimeline} */
+  /** @type {!shaka.media.RegionTimeline<shaka.extern.TimelineRegionInfo>} */
   let timeline;
 
   /** @type {!jasmine.Spy} */
@@ -133,6 +133,7 @@ describe('RegionTimeline', () => {
       value: '',
       startTime: startTimeSeconds,
       endTime: endTimeSeconds,
+      timescale: 1,
       eventElement: null,
       eventNode: null,
     };
