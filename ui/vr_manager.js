@@ -338,7 +338,7 @@ shaka.ui.VRManager = class extends shaka.util.FakeEventTarget {
     if (this.gl_ && this.canvas_) {
       this.vrWebgl_ = new shaka.ui.VRWebgl(
           this.video_, this.player_, this.canvas_, this.gl_, projectionMode);
-      this.setupVRListerners_();
+      this.setupVRListeners_();
     }
   }
 
@@ -371,7 +371,7 @@ shaka.ui.VRManager = class extends shaka.util.FakeEventTarget {
   /**
    * @private
    */
-  setupVRListerners_() {
+  setupVRListeners_() {
     // Start
     this.eventManager_.listen(this.container_, 'mousedown', (event) => {
       if (!this.onGesture_) {
@@ -551,7 +551,7 @@ shaka.ui.VRManager = class extends shaka.util.FakeEventTarget {
 };
 
 /**
- * @constant {number}
+ * @const {number}
  * @private
  */
 shaka.ui.VRManager.TO_RADIANS_ = Math.PI / 180;

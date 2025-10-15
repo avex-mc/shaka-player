@@ -98,11 +98,14 @@ const container = video.ui.getControls().getClientSideAdContainer();
 adManager.initInterstitial(container, player, video);
 adManager.addCustomInterstitial({
   id: null,
+  groupId: null,
   startTime: 10,
   endTime: null,
   uri: 'YOUR_URL',
+  mimeType: null,
   isSkippable: true,
   skipOffset: 10,
+  skipFor: null,
   canJump: false,
   resumeOffset: null,
   playoutLimit: null,
@@ -110,6 +113,96 @@ adManager.addCustomInterstitial({
   pre: false,
   post: false,
   timelineRange: false,
+  loop: false,
+  overlay: null,
+});
+```
+
+You can also use this with SCTE-35:
+
+```js
+const adManager = player.getAdManager();
+const video = document.getElementById('video');
+const ui = video['ui'];
+// If you're using a non-UI build, this is the div you'll need to create
+// for your layout.  The ad manager will clear this div, when it unloads, so
+// don't pass in a div that contains non-ad elements.
+const container = video.ui.getControls().getClientSideAdContainer();
+adManager.initInterstitial(container, player, video);
+player.addEventListener('timelineregionadded', (e) => {
+  const event = e.detail;
+  if (event.schemeIdUri != 'urn:scte:scte35:2014:xml+bin') {
+    return;
+  }
+  adManager.addCustomInterstitial({
+    id: event.id,
+    groupId: null,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    uri: 'YOUR_URL',
+    mimeType: null,
+    isSkippable: false,
+    skipOffset: null,
+    skipFor: null,
+    canJump: true,
+    resumeOffset: player.isLive() ? null : 0,
+    playoutLimit: null,
+    once: false,
+    pre: false,
+    post: false,
+    timelineRange: player.isLive(), // If true, the ad will appear as a range on the timeline.
+    loop: false,
+    overlay: null
+  });
+});
+```
+
+
+##### Custom Overlay Interstitials
+
+Example:
+
+```js
+const adManager = player.getAdManager();
+const video = document.getElementById('video');
+const ui = video['ui'];
+// If you're using a non-UI build, this is the div you'll need to create
+// for your layout.  The ad manager will clear this div, when it unloads, so
+// don't pass in a div that contains non-ad elements.
+const container = video.ui.getControls().getClientSideAdContainer();
+adManager.initInterstitial(container, player, video);
+adManager.addCustomInterstitial({
+  id: null,
+  groupId: null,
+  startTime: 10,
+  endTime: null,
+  uri: 'YOUR_URL',
+  mimeType: null,
+  isSkippable: true,
+  skipOffset: 10,
+  skipFor: null,
+  canJump: false,
+  resumeOffset: null,
+  playoutLimit: null,
+  once: true,
+  pre: false,
+  post: false,
+  timelineRange: false,
+  loop: false,
+  overlay: { // Show interstitial in upper right quadrant
+    viewport: {
+      x: 1920, // Pixels
+      y: 1080, // Pixels
+    },
+    topLeft: {
+      x: 960, // Pixels
+      y: 0, // Pixels
+    },
+    size: {
+      x: 960, // Pixels
+      y: 540, // Pixels
+    },
+  },
 });
 ```
 
@@ -127,10 +220,7 @@ const ui = video['ui'];
 // don't pass in a div that contains non-ad elements.
 const container = video.ui.getControls().getClientSideAdContainer();
 adManager.initInterstitial(container, player, video);
-const url = 'https://pubads.g.doubleclick.net/gampad/ads?' +
-    'sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&' +
-    'impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&' +
-    'cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=';
+const url = 'https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=';
 adManager.addAdUrlInterstitial(url);
 ```
 
@@ -198,10 +288,7 @@ the presentation.
 const adsRequest = new google.ima.AdsRequest();
 // Your ad tag url should go here. We are using a sample ad tag from the
 // IMA HTML5 SDK implementation guide for this tutorial.
-adsRequest.adTagUrl = 'https://pubads.g.doubleclick.net/gampad/ads?' +
-    'sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&' +
-    'impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&' +
-    'cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=';
+adsRequest.adTagUrl = 'https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=';
 adManager.requestClientSideAds(adsRequest);
 ```
 
@@ -271,6 +358,7 @@ See [google.ima.dai.api.VODStreamRequest][] for details on the request object.
 
 Requesting a LIVE stream:
 
+<!--cSpell:disable -->
 ```js
 const streamRequest = new google.ima.dai.api.LiveStreamRequest();
 // Your stream information will go here. We are using IMA's sample stream info
@@ -279,6 +367,7 @@ streamRequest.assetKey = 'sN_IYUG8STe1ZzhIIE_ksA';
 const uri = await adManager.requestServerSideStream(streamRequest);
 player.load(uri);
 ```
+<!--cSpell:enable -->
 
 See: [google.ima.dai.api.LiveStreamRequest][] for details on the request object.
 

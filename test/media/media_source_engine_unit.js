@@ -165,6 +165,10 @@ describe('MediaSourceEngine', () => {
     videoSourceBuffer = createMockSourceBuffer();
     mockMediaSource = createMockMediaSource();
     mockMediaSource.addSourceBuffer.and.callFake((mimeType) => {
+      if (mockMediaSource.readyState !== 'open') {
+        // https://w3c.github.io/media-source/#addsourcebuffer-method
+        throw new Error('InvalidStateError');
+      }
       const type = mimeType.split('/')[0];
       const buffer = type == 'audio' ? audioSourceBuffer : videoSourceBuffer;
 
@@ -200,6 +204,7 @@ describe('MediaSourceEngine', () => {
     createMediaSourceSpy = jasmine.createSpy('createMediaSource');
     createMediaSourceSpy.and.callFake((p) => {
       p.resolve();
+      mockMediaSource.readyState = 'open';
       return mockMediaSource;
     });
     // eslint-disable-next-line no-restricted-syntax
@@ -399,6 +404,32 @@ describe('MediaSourceEngine', () => {
           'video/mp4; extra_video_param');
       expect(shaka.text.TextEngine).not.toHaveBeenCalled();
     });
+
+    it('creates SourceBuffers when MediaSource readyState is closed',
+        async () => {
+          const initObject = new Map();
+          initObject.set(ContentType.AUDIO, fakeAudioStream);
+          initObject.set(ContentType.VIDEO, fakeVideoStream);
+
+          await mediaSourceEngine.open();
+
+          mockMediaSource.readyState = 'closed';
+          await expectAsync(
+              mediaSourceEngine.init(initObject, false)).not.toBeRejected();
+        });
+
+    it('creates SourceBuffers when MediaSource readyState is ended',
+        async () => {
+          const initObject = new Map();
+          initObject.set(ContentType.AUDIO, fakeAudioStream);
+          initObject.set(ContentType.VIDEO, fakeVideoStream);
+
+          await mediaSourceEngine.open();
+
+          mockMediaSource.readyState = 'ended';
+          await expectAsync(
+              mediaSourceEngine.init(initObject, false)).not.toBeRejected();
+        });
 
     it('creates TextEngines for text types', async () => {
       const initObject = new Map();
@@ -1001,11 +1032,11 @@ describe('MediaSourceEngine', () => {
       // Since the fix was to remove the implicit seek, this behavior would then
       // be removed from the mock, which would render the test useless.
 
-      // An integration test involving both StreamingEngine and MediaSourcEngine
-      // would also be problematic.  The bug involved a race, so it would be
-      // difficult to reproduce the necessary timing.  And if we succeeded, it
-      // would be tough to detect that we were definitely in a seek loop, since
-      // nothing was mocked.
+      // An integration test involving both StreamingEngine
+      // and MediaSourceEngine would also be problematic.  The bug involved
+      // a race, so it would be difficult to reproduce the necessary timing.
+      // And if we succeeded, it would be tough to detect that we were
+      // definitely in a seek loop, since nothing was mocked.
 
       // So the best option seems to be to enforce that clear() does not result
       // in a seek.  This can be done here, in a unit test on MediaSourceEngine.
@@ -1264,7 +1295,11 @@ describe('MediaSourceEngine', () => {
     initObject.set(ContentType.VIDEO, fakeVideoStream);
     initObject.set(ContentType.AUDIO, fakeAudioStream);
 
-    /** @suppress {visibility} */
+    /**
+     * @param {!Map<shaka.util.ManifestParserUtils.ContentType,
+     *              shaka.extern.Stream>} initObject
+     * @suppress {visibility}
+     */
     async function resetMSE(initObject) {
       await mediaSourceEngine.reset_(initObject);
     }

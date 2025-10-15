@@ -731,6 +731,62 @@ describe('Player', () => {
       });
     });
 
+    describe('when config.streaming.preferNativeDash is set to true', () => {
+      beforeAll(() => {
+        shaka.media.ManifestParser.registerParserByMime(
+            'application/dash+xml',
+            () => new shaka.test.FakeManifestParser(manifest));
+      });
+
+      afterAll(() => {
+        // IMPORTANT: restore the ORIGINAL parser.  DO NOT just unregister the
+        // fake!
+        shaka.media.ManifestParser.registerParserByMime(
+            'application/dash+xml',
+            () => new shaka.dash.DashParser());
+      });
+
+      afterEach(() => {
+        video.canPlayType.calls.reset();
+      });
+
+      it('only applies to DASH streams', async () => {
+        video.canPlayType.and.returnValue('maybe');
+        spyOn(shaka.util.Platform, 'anyMediaElement').and.returnValue(video);
+        spyOn(shaka.util.Platform, 'supportsMediaSource').and.returnValue(true);
+        // Make sure player.load() resolves for src=
+        spyOn(shaka.util.MediaReadyState, 'waitForReadyState').and.callFake(
+            (mediaElement, readyState, eventManager, callback) => {
+              callback();
+            });
+
+        player.configure({
+          streaming: {
+            preferNativeDash: true,
+          },
+        });
+
+        await player.load(fakeManifestUri, undefined, 'application/dash+xml');
+
+        expect(player.getLoadMode()).toBe(shaka.Player.LoadMode.SRC_EQUALS);
+      });
+
+      it('does not apply to non-DASH streams', async () => {
+        video.canPlayType.and.returnValue('maybe');
+        spyOn(shaka.util.Platform, 'supportsMediaSource').and.returnValue(true);
+
+        player.configure({
+          streaming: {
+            preferNativeDash: true,
+          },
+        });
+
+        await player.load(fakeManifestUri, 0, fakeMimeType);
+
+        expect(player.getLoadMode()).toBe(shaka.Player.LoadMode.MEDIA_SOURCE);
+      });
+    });
+
     describe('when config.streaming.preferNativeHls is set to true', () => {
       beforeAll(() => {
         shaka.media.ManifestParser.registerParserByMime(
@@ -831,6 +887,17 @@ describe('Player', () => {
     expect(nonDefaultConfiguration['mediaSource']).toBeUndefined();
     expect(nonDefaultConfiguration['manifest']['availabilityWindowOverride'])
         .toBeUndefined();
+  });
+
+  it('configurationForLowLatency and getConfigurationForLowLatency', () => {
+    let configurationForLowLatency = player.getConfigurationForLowLatency();
+    expect(configurationForLowLatency).not.toBeNull();
+    player.configurationForLowLatency({
+      ignoreHardwareResolution: true,
+    });
+    configurationForLowLatency = player.getConfigurationForLowLatency();
+    expect(configurationForLowLatency).not.toBeNull();
+    expect(configurationForLowLatency['ignoreHardwareResolution']).toBeTruthy();
   });
 
   describe('configure', () => {
@@ -1286,71 +1353,6 @@ describe('Player', () => {
       expect(fooConfig2.distinctiveIdentifierRequired).toBe(true);
       expect(barConfig2.distinctiveIdentifierRequired).toBe(false);
     });
-
-    it('sets default streaming configuration with low latency mode', () => {
-      player.configure({
-        streaming: {
-          lowLatencyMode: true,
-          rebufferingGoal: 1,
-          inaccurateManifestTolerance: 1,
-          segmentPrefetchLimit: 1,
-          updateIntervalSeconds: 10,
-          maxDisabledTime: 10,
-          retryParameters: {
-            baseDelay: 2000,
-          },
-        },
-        manifest: {
-          dash: {
-            autoCorrectDrift: true,
-          },
-          retryParameters: {
-            baseDelay: 2000,
-          },
-        },
-        drm: {
-          retryParameters: {
-            baseDelay: 2000,
-          },
-        },
-      });
-      expect(player.getConfiguration().streaming.rebufferingGoal).toBe(1);
-      expect(player.getConfiguration().streaming.inaccurateManifestTolerance)
-          .toBe(1);
-      expect(player.getConfiguration().streaming.segmentPrefetchLimit).toBe(1);
-      expect(player.getConfiguration().streaming.updateIntervalSeconds)
-          .toBe(10);
-      expect(player.getConfiguration().streaming.maxDisabledTime).toBe(10);
-      expect(player.getConfiguration().streaming.retryParameters.baseDelay)
-          .toBe(2000);
-      expect(player.getConfiguration().manifest.dash.autoCorrectDrift)
-          .toBe(true);
-      expect(player.getConfiguration().manifest.retryParameters.baseDelay)
-          .toBe(2000);
-      expect(player.getConfiguration().drm.retryParameters.baseDelay)
-          .toBe(2000);
-
-      // When low latency streaming gets enabled, rebufferingGoal will default
-      // to 0.01 if unless specified, inaccurateManifestTolerance will
-      // default to 0 unless specified, and segmentPrefetchLimit will
-      // default to 2 unless specified.
-      player.configure('streaming.lowLatencyMode', true);
-      expect(player.getConfiguration().streaming.rebufferingGoal).toBe(0.01);
-      expect(player.getConfiguration().streaming.inaccurateManifestTolerance)
-          .toBe(0);
-      expect(player.getConfiguration().streaming.segmentPrefetchLimit).toBe(2);
-      expect(player.getConfiguration().streaming.updateIntervalSeconds)
-          .toBe(0.1);
-      expect(player.getConfiguration().streaming.maxDisabledTime).toBe(1);
-      expect(player.getConfiguration().streaming.retryParameters.baseDelay)
-          .toBe(100);
-      expect(player.getConfiguration().manifest.dash.autoCorrectDrift)
-          .toBe(false);
-      expect(player.getConfiguration().manifest.retryParameters.baseDelay)
-          .toBe(100);
-      expect(player.getConfiguration().drm.retryParameters.baseDelay)
-          .toBe(100);
-    });
   });
 
   describe('preload', () => {
@@ -1386,6 +1388,31 @@ describe('Player', () => {
       const config = player.getSharedConfiguration();
       player.resetConfiguration();
       expect(player.getSharedConfiguration()).toBe(config);
+    });
+  });
+
+  describe('AdaptationSetCriteria.Factory', () => {
+    it('uses the provided Factory method', async () => {
+      const preferenceBasedCriteria = new shaka.media.PreferenceBasedCriteria();
+      /** @type {!jasmine.Spy} */
+      const spy1 =
+          jasmine.createSpy('AdaptationSetCriteria.Factory')
+              .and.returnValue(preferenceBasedCriteria);
+      /** @type {!jasmine.Spy} */
+      const spy2 =
+          jasmine.createSpy('AdaptationSetCriteria.Factory')
+              .and.returnValue(preferenceBasedCriteria);
+      player.configure({adaptationSetCriteriaFactory: spy1});
+
+      await player.load(fakeManifestUri, 0, fakeMimeType);
+      expect(spy1).toHaveBeenCalled();
+      expect(spy2).not.toHaveBeenCalled();
+      spy1.calls.reset();
+
+      player.configure({adaptationSetCriteriaFactory: spy2});
+      await player.load(fakeManifestUri, 0, fakeMimeType);
+      expect(spy1).not.toHaveBeenCalled();
+      expect(spy2).toHaveBeenCalled();
     });
   });
 
@@ -1492,11 +1519,11 @@ describe('Player', () => {
   });
 
   describe('tracks', () => {
-    /** @type {!Array.<shaka.extern.Track>} */
+    /** @type {!Array<shaka.extern.Track>} */
     let variantTracks;
-    /** @type {!Array.<shaka.extern.Track>} */
+    /** @type {!Array<shaka.extern.Track>} */
     let textTracks;
-    /** @type {!Array.<shaka.extern.Track>} */
+    /** @type {!Array<shaka.extern.Track>} */
     let imageTracks;
 
     beforeEach(async () => {
@@ -2758,7 +2785,7 @@ describe('Player', () => {
       await runTest(['en', 'pt', 'pt-BR'], 'pt', 1);
     });
 
-    it('chooses exact match for subtags', async () => {
+    it('chooses exact match for sub tags', async () => {
       await runTest(['en', 'pt', 'pt-BR'], 'PT-BR', 2);
     });
 
@@ -2766,7 +2793,7 @@ describe('Player', () => {
       await runTest(['en', 'es', 'pt'], 'pt-BR', 2);
     });
 
-    it('chooses other subtags if base language does not exist', async () => {
+    it('chooses other sub tags if base language does not exist', async () => {
       await runTest(['en', 'es', 'pt-BR'], 'pt-PT', 2);
     });
 
@@ -2841,7 +2868,7 @@ describe('Player', () => {
     });
 
     /**
-     * @param {!Array.<string>} languages
+     * @param {!Array<string>} languages
      * @param {string} preference
      * @param {number} expectedIndex
      * @return {!Promise}
@@ -2875,6 +2902,45 @@ describe('Player', () => {
       expect(getActiveVariantTrack().id).toBe(expectedIndex);
     }
   });  // describe('languages')
+
+  describe('getLiveLatency()', () => {
+    let timeline;
+
+    beforeEach(async () => {
+      // Create a presentation timeline for a live stream.
+      timeline = new shaka.media.PresentationTimeline(300, 0);
+      timeline.setStatic(false); // Indicate that this is a live stream.
+
+      // Set an initial program date time to simulate a live stream with a
+      // known start time.
+      timeline.setInitialProgramDateTime(1000);
+
+      // Generate a manifest that uses this timeline.
+      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+        manifest.presentationTimeline = timeline;
+        manifest.addVariant(0, (variant) => {
+          variant.addVideo(1);
+        });
+      });
+
+      // Load the player with the live manifest.
+      await player.load(fakeManifestUri, null, fakeMimeType);
+
+      video.currentTime = 10; // Simulate that we're 10 seconds into playback.
+    });
+
+    it('returns null if video element does not exist', async () => {
+      await player.detach();
+      const latency = player.getLiveLatency();
+      expect(latency).toBeNull();
+    });
+
+    it('returns correct latency when video is playing', () => {
+      Date.now = () => 2000 * 1000;
+      const latency = player.getLiveLatency();
+      expect(latency).toBe(990000);
+    });
+  });
 
   describe('getStats', () => {
     const oldDateNow = Date.now;
@@ -3057,7 +3123,7 @@ describe('Player', () => {
 
       /**
        * Checks that the switch history is correct.
-       * @param {!Array.<shaka.extern.TrackChoice>} additional
+       * @param {!Array<shaka.extern.TrackChoice>} additional
        */
       function checkHistory(additional) {
         const variantPrefix = {
@@ -3677,6 +3743,8 @@ describe('Player', () => {
             stream.mimeType = 'video';
             stream.codecs = 'unsupported';
             stream.addDrmInfo('foo.bar');
+            stream.fullMimeTypes = new Set([shaka.util.MimeUtils.getFullType(
+                stream.mimeType, stream.codecs)]);
           });
         });
         manifest.addVariant(1, (variant) => {
@@ -4197,9 +4265,9 @@ describe('Player', () => {
     it('gets current segment availability duration', () => {
       playhead.getTime.and.returnValue(20);
 
-      const segmentAvailabiltyDuration =
+      const segmentAvailabilityDuration =
           player.getSegmentAvailabilityDuration();
-      expect(segmentAvailabiltyDuration).toBe(1000);
+      expect(segmentAvailabilityDuration).toBe(1000);
     });
   });
 
@@ -4905,7 +4973,7 @@ describe('Player', () => {
   }
 
   /**
-   * @param {!Object.<string, string>} keyStatusMap
+   * @param {!Object<string, string>} keyStatusMap
    * @suppress {accessControls}
    */
   function onKeyStatus(keyStatusMap) {

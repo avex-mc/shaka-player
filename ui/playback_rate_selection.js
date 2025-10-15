@@ -52,7 +52,7 @@ shaka.ui.PlaybackRateSelection = class extends shaka.ui.SettingsMenu {
       this.updatePlaybackRateSelection_(this.player.getPlaybackRate());
     });
 
-    /** @type {!Map.<string, number>} */
+    /** @type {!Map<string, number>} */
     this.playbackRates_ = new Map(this.controls.getConfig().playbackRates
         .map((rate) => [rate + 'x', rate]));
 
@@ -120,8 +120,12 @@ shaka.ui.PlaybackRateSelection = class extends shaka.ui.SettingsMenu {
       button.appendChild(span);
 
       this.eventManager.listen(button, 'click', () => {
-        this.video.playbackRate = this.playbackRates_.get(rateStr);
-        this.video.defaultPlaybackRate = this.playbackRates_.get(rateStr);
+        const rate = this.playbackRates_.get(rateStr);
+        if (rate == this.video.defaultPlaybackRate) {
+          this.player.cancelTrickPlay();
+        } else {
+          this.player.trickPlay(rate, /* useTrickPlayTrack= */ false);
+        }
       });
 
       this.menu.appendChild(button);

@@ -40,11 +40,11 @@ const ShakaDemoAssetInfo = class {
     this.focus = false;
     /** @type {boolean} */
     this.disabled = false;
-    /** @type {!Array.<!shaka.extern.ExtraText>} */
+    /** @type {!Array<!shaka.extern.ExtraText>} */
     this.extraText = [];
-    /** @type {!Array.<string>} */
+    /** @type {!Array<string>} */
     this.extraThumbnail = [];
-    /** @type {!Array.<!shakaAssets.ExtraChapter>} */
+    /** @type {!Array<!shakaAssets.ExtraChapter>} */
     this.extraChapter = [];
     /** @type {?string} */
     this.certificateUri = null;
@@ -52,19 +52,21 @@ const ShakaDemoAssetInfo = class {
     this.description = null;
     /** @type {boolean} */
     this.isFeatured = false;
-    /** @type {!Array.<!shakaAssets.KeySystem>} */
+    /** @type {!Array<!shakaAssets.KeySystem>} */
     this.drm = [shakaAssets.KeySystem.CLEAR];
-    /** @type {!Array.<!shakaAssets.Feature>} */
+    /** @type {!Array<!shakaAssets.Feature>} */
     this.features = [shakaAssets.Feature.VOD];
-    /** @type {!Map.<string, string>} */
+    /** @type {!Map<string, string>} */
     this.licenseServers = new Map();
-    /** @type {!Map.<string, string>} */
+    /** @type {!Map<string, string>} */
+    this.offlineLicenseServers = new Map();
+    /** @type {!Map<string, string>} */
     this.licenseRequestHeaders = new Map();
     /** @type {?shaka.extern.RequestFilter} */
     this.requestFilter = null;
     /** @type {?shaka.extern.ResponseFilter} */
     this.responseFilter = null;
-    /** @type {!Map.<string, string>} */
+    /** @type {!Map<string, string>} */
     this.clearKeys = new Map(); // TODO: Setter method?
     /** @type {?Object} */
     this.extraConfig = null;
@@ -240,6 +242,23 @@ const ShakaDemoAssetInfo = class {
   }
 
   /**
+   * @return {!Map<string, string>}
+   */
+  getLicenseServers() {
+    return this.licenseServers;
+  }
+
+  /**
+   * @param {string} keySystem
+   * @param {string} licenseServer
+   * @return {!ShakaDemoAssetInfo}
+   */
+  addOfflineLicenseServer(keySystem, licenseServer) {
+    this.offlineLicenseServers.set(keySystem, licenseServer);
+    return this;
+  }
+
+  /**
    * @param {string} uri
    * @return {!ShakaDemoAssetInfo}
    */
@@ -409,10 +428,9 @@ const ShakaDemoAssetInfo = class {
   /**
    * @return {!Object}
    * @override
-   *
+   * @suppress {checkTypes}
    * Suppress checkTypes warnings, so that we can access properties of this
    * object as though it were a struct.
-   * @suppress {checkTypes}
    */
   toJSON() {
     // Construct a generic object with the values of this object, but with the
@@ -476,9 +494,11 @@ const ShakaDemoAssetInfo = class {
 
   /**
    * Gets the configuration object for the asset.
+   *
+   * @param {boolean=} forStorage
    * @return {!shaka.extern.PlayerConfiguration}
    */
-  getConfiguration() {
+  getConfiguration(forStorage = false) {
     const config = /** @type {shaka.extern.PlayerConfiguration} */(
       {drm: {advanced: {}}, manifest: {dash: {}, hls: {}}});
 
@@ -488,9 +508,15 @@ const ShakaDemoAssetInfo = class {
       }
     }
 
-    if (this.licenseServers.size) {
+    let licenseServers = this.licenseServers;
+    // PR license servers may require a different URL for offline.
+    if (forStorage && this.offlineLicenseServers.size) {
+      licenseServers = this.offlineLicenseServers;
+    }
+
+    if (licenseServers.size) {
       config.drm.servers = config.drm.servers || {};
-      this.licenseServers.forEach((value, key) => {
+      licenseServers.forEach((value, key) => {
         config.drm.servers[key] = value;
       });
     }
@@ -501,11 +527,23 @@ const ShakaDemoAssetInfo = class {
         config.drm.clearKeys[key] = value;
       });
     }
+
+    // Windows Edge only support persistent licenses with
+    // `com.microsoft.playready.recommendation` keySystem.
+    if (forStorage &&
+        navigator.userAgent.match(/Edge?\//) &&
+        navigator.platform &&
+        navigator.platform.toLowerCase().includes('win32')) {
+      config.drm.keySystemsMapping = {
+        'com.microsoft.playready': 'com.microsoft.playready.recommendation',
+      };
+    }
+
     return config;
   }
 
   /**
-   * @param {!Map.<string, string>} headers
+   * @param {!Map<string, string>} headers
    * @param {shaka.net.NetworkingEngine.RequestType} requestType
    * @param {shaka.extern.Request} request
    * @private

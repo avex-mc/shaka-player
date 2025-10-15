@@ -143,7 +143,7 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
       this.hideThumbnail_();
     });
 
-    /** @private {!Array.<!shaka.extern.AdCuePoint>} */
+    /** @private {!Array<!shaka.extern.AdCuePoint>} */
     this.adCuePoints_ = [];
 
     this.eventManager.listen(this.localization,
@@ -313,7 +313,7 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
 
   /**
    * @override
-  */
+   */
   isShowing() {
     // It is showing by default, so it is hidden if shaka-hidden is in the list.
     return !this.container.classList.contains('shaka-hidden');
@@ -442,12 +442,12 @@ shaka.ui.SeekBar = class extends shaka.ui.RangeElement {
 
   /**
    * @param {string} color
-   * @param {number} fract
+   * @param {number} fraction
    * @return {string}
    * @private
    */
-  makeColor_(color, fract) {
-    return color + ' ' + (fract * 100) + '%';
+  makeColor_(color, fraction) {
+    return color + ' ' + (fraction * 100) + '%';
   }
 
 

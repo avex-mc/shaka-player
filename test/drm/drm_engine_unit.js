@@ -4,13 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// cspell:words abar vbar
+
 describe('DrmEngine', () => {
   const Util = shaka.test.Util;
 
   const originalRequestMediaKeySystemAccess =
       navigator.requestMediaKeySystemAccess;
   const originalLogError = shaka.log.error;
-  const originalBatchTime = shaka.media.DrmEngine.KEY_STATUS_BATCH_TIME;
+  const originalBatchTime = shaka.drm.DrmEngine.KEY_STATUS_BATCH_TIME;
   const originalDecodingInfo = navigator.mediaCapabilities.decodingInfo;
 
   /** @type {!jasmine.Spy} */
@@ -28,7 +30,7 @@ describe('DrmEngine', () => {
 
   /** @type {!shaka.test.FakeNetworkingEngine} */
   let fakeNetEngine;
-  /** @type {!shaka.media.DrmEngine} */
+  /** @type {!shaka.drm.DrmEngine} */
   let drmEngine;
   /** @type {shaka.extern.Manifest} */
   let manifest;
@@ -47,11 +49,11 @@ describe('DrmEngine', () => {
   const containing = jasmine.objectContaining;
 
   beforeAll(() => {
-    shaka.media.DrmEngine.KEY_STATUS_BATCH_TIME = 0;
+    shaka.drm.DrmEngine.KEY_STATUS_BATCH_TIME = 0;
   });
 
   afterAll(() => {
-    shaka.media.DrmEngine.KEY_STATUS_BATCH_TIME = originalBatchTime;
+    shaka.drm.DrmEngine.KEY_STATUS_BATCH_TIME = originalBatchTime;
   });
 
   beforeEach(() => {
@@ -119,7 +121,7 @@ describe('DrmEngine', () => {
       onEvent: shaka.test.Util.spyFunc(onEventSpy),
     };
 
-    drmEngine = new shaka.media.DrmEngine(playerInterface);
+    drmEngine = new shaka.drm.DrmEngine(playerInterface);
 
     config = shaka.util.PlayerConfiguration.createDefault().drm;
     config.servers = {
@@ -167,7 +169,7 @@ describe('DrmEngine', () => {
       const variants = manifest.variants;
       await drmEngine.initForPlayback(variants, manifest.offlineSessionIds);
       expect(drmEngine.initialized()).toBe(true);
-      expect(shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo()))
+      expect(shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo()))
           .toBe('drm.abc');
     });
 
@@ -196,7 +198,7 @@ describe('DrmEngine', () => {
       const variants = manifest.variants;
       await drmEngine.initForPlayback(variants, manifest.offlineSessionIds);
       expect(drmEngine.initialized()).toBe(true);
-      expect(shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo()))
+      expect(shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo()))
           .toBe('drm.def');
     });
 
@@ -213,7 +215,7 @@ describe('DrmEngine', () => {
       // should be only one variant, as preferredKeySystems is propagated
       // to getDecodingInfos
       expect(variants[0].decodingInfos.length).toBe(1);
-      expect(shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo()))
+      expect(shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo()))
           .toBe('drm.def');
     });
 
@@ -221,7 +223,7 @@ describe('DrmEngine', () => {
       // Accept both drm.abc and drm.def.  Only one can be chosen.
       setDecodingInfoSpy(['drm.abc', 'drm.def']);
 
-      // Remove the server URI for drm.abc, which appears first in the manifest.
+      // Remove the server URI for drm.abc.
       delete config.servers['drm.abc'];
       drmEngine.configure(config);
       // Ignore error logs, which we expect to occur due to the missing server.
@@ -231,11 +233,11 @@ describe('DrmEngine', () => {
       await drmEngine.initForPlayback(variants, manifest.offlineSessionIds);
 
       expect(variants[0].decodingInfos.length).toBe(2);
-      expect(shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo()))
+      expect(shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo()))
           .toBe('drm.def');
     });
 
-    it('overrides manifest with configured license servers', async () => {
+    it('overrides manifest with configured license server', async () => {
       // Accept both drm.abc and drm.def.  Only one can be chosen.
       setDecodingInfoSpy(['drm.abc', 'drm.def']);
 
@@ -255,9 +257,8 @@ describe('DrmEngine', () => {
         }
       });
 
-      // Remove the server URI for drm.abc from the config, so that only drm.def
-      // could be used, in spite of the manifest-supplied license server URI.
-      delete config.servers['drm.abc'];
+      // Override the server URI for drm.abc from config.
+      config.servers['drm.abc'] = 'override.drm.abc';
       drmEngine.configure(config);
 
       // Ignore error logs, which we expect to occur due to the missing server.
@@ -269,8 +270,8 @@ describe('DrmEngine', () => {
       expect(variants[0].decodingInfos.length).toBe(2);
       const selectedDrmInfo = drmEngine.getDrmInfo();
       expect(selectedDrmInfo).not.toBe(null);
-      expect(selectedDrmInfo.keySystem).toBe('drm.def');
-      expect(selectedDrmInfo.licenseServerUri).toBe(config.servers['drm.def']);
+      expect(selectedDrmInfo.keySystem).toBe('drm.abc');
+      expect(selectedDrmInfo.licenseServerUri).toBe(config.servers['drm.abc']);
     });
 
     it('fails to initialize if no key systems are available', async () => {
@@ -486,7 +487,7 @@ describe('DrmEngine', () => {
           expect(variants[0].decodingInfos.length).toBe(1);
           expect(variants[0].decodingInfos[0].keySystemAccess).toBeFalsy();
           expect(
-              shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo())).toBe('');
+              shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo())).toBe('');
           expect(drmEngine.initialized()).toBe(true);
         });
 
@@ -502,64 +503,299 @@ describe('DrmEngine', () => {
       const variants = manifest.variants;
       await drmEngine.initForPlayback(variants, manifest.offlineSessionIds);
       expect(drmEngine.initialized()).toBe(true);
-      expect(shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo()))
+      expect(shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo()))
           .toBe('drm.abc');
       expect(variants[0].decodingInfos.length).toBe(1);
     });
 
-    it('uses advanced config to fill in DrmInfo', async () => {
-      // Leave only one drmInfo
-      manifest = shaka.test.ManifestGenerator.generate((manifest) => {
-        manifest.addVariant(0, (variant) => {
-          variant.addVideo(1, (stream) => {
-            stream.encrypted = true;
-            stream.addDrmInfo('drm.abc');
+    it('uses advanced config to fill in DrmInfo, single robustness',
+        async () => {
+          // Leave only one drmInfo
+          manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+            manifest.addVariant(0, (variant) => {
+              variant.addVideo(1, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+              variant.addAudio(2, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+            });
           });
-          variant.addAudio(2, (stream) => {
-            stream.encrypted = true;
-            stream.addDrmInfo('drm.abc');
-          });
+
+          setDecodingInfoSpy([]);
+
+          config.advanced['drm.abc'] = {
+            audioRobustness: ['good'],
+            videoRobustness: ['really_really_ridiculously_good'],
+            serverCertificate: null,
+            serverCertificateUri: '',
+            sessionType: 'persistent-license',
+            individualizationServer: '',
+            distinctiveIdentifierRequired: true,
+            persistentStateRequired: true,
+            headers: {},
+          };
+          drmEngine.configure(config);
+
+          const variants = manifest.variants;
+          await expectAsync(
+              drmEngine.initForPlayback(variants, manifest.offlineSessionIds))
+              .toBeRejected();
+
+          expect(drmEngine.initialized()).toBe(false);
+          expect(decodingInfoSpy).toHaveBeenCalledTimes(1);
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'good',
+              }),
+              video: containing({
+                robustness: 'really_really_ridiculously_good',
+              }),
+            }),
+          }));
         });
-      });
 
-      setDecodingInfoSpy([]);
+    it('uses advanced config to fill in DrmInfo, single robustness, default',
+        async () => {
+          // Leave only one drmInfo
+          manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+            manifest.addVariant(0, (variant) => {
+              variant.addVideo(1, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+              variant.addAudio(2, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+            });
+          });
 
-      config.advanced['drm.abc'] = {
-        audioRobustness: 'good',
-        videoRobustness: 'really_really_ridiculously_good',
-        serverCertificate: null,
-        serverCertificateUri: '',
-        sessionType: 'persistent-license',
-        individualizationServer: '',
-        distinctiveIdentifierRequired: true,
-        persistentStateRequired: true,
-        headers: {},
-      };
-      drmEngine.configure(config);
+          setDecodingInfoSpy([]);
 
-      const variants = manifest.variants;
-      await expectAsync(
-          drmEngine.initForPlayback(variants, manifest.offlineSessionIds))
-          .toBeRejected();
+          config.advanced['drm.abc'] = {
+            audioRobustness: [],
+            videoRobustness: [],
+            serverCertificate: null,
+            serverCertificateUri: '',
+            sessionType: 'persistent-license',
+            individualizationServer: '',
+            distinctiveIdentifierRequired: true,
+            persistentStateRequired: true,
+            headers: {},
+          };
+          drmEngine.configure(config);
 
-      expect(drmEngine.initialized()).toBe(false);
-      expect(decodingInfoSpy).toHaveBeenCalledTimes(1);
-      expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
-        keySystemConfiguration: containing({
-          keySystem: 'drm.abc',
-          distinctiveIdentifier: 'required',
-          persistentState: 'required',
-          sessionTypes: ['persistent-license'],
-          initDataType: 'cenc',
-          audio: containing({
-            robustness: 'good',
-          }),
-          video: containing({
-            robustness: 'really_really_ridiculously_good',
-          }),
-        }),
-      }));
-    });
+          const variants = manifest.variants;
+          await expectAsync(
+              drmEngine.initForPlayback(variants, manifest.offlineSessionIds))
+              .toBeRejected();
+
+          expect(drmEngine.initialized()).toBe(false);
+          expect(decodingInfoSpy).toHaveBeenCalledTimes(1);
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+            }),
+          }));
+          expect(decodingInfoSpy).not.toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              audio: containing({
+                robustness: '',
+              }),
+              video: containing({
+                robustness: '',
+              }),
+            }),
+          }));
+        });
+
+    it('uses advanced config to fill in DrmInfo, multiple video robustness',
+        async () => {
+          // Leave only one drmInfo
+          manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+            manifest.addVariant(0, (variant) => {
+              variant.addVideo(1, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+              variant.addAudio(2, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+            });
+          });
+
+          setDecodingInfoSpy([]);
+
+          config.advanced['drm.abc'] = {
+            audioRobustness: ['good'],
+            videoRobustness: [
+              'really_ridiculously_good', 'a_mid_one', 'another_worse_one',
+            ],
+            serverCertificate: null,
+            serverCertificateUri: '',
+            sessionType: 'persistent-license',
+            individualizationServer: '',
+            distinctiveIdentifierRequired: true,
+            persistentStateRequired: true,
+            headers: {},
+          };
+          drmEngine.configure(config);
+
+          const variants = manifest.variants;
+          await expectAsync(
+              drmEngine.initForPlayback(variants, manifest.offlineSessionIds))
+              .toBeRejected();
+
+          expect(drmEngine.initialized()).toBe(false);
+          expect(decodingInfoSpy).toHaveBeenCalledTimes(3);
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'good',
+              }),
+              video: containing({
+                robustness: 'really_ridiculously_good',
+              }),
+            }),
+          }));
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'good',
+              }),
+              video: containing({
+                robustness: 'a_mid_one',
+              }),
+            }),
+          }));
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'good',
+              }),
+              video: containing({
+                robustness: 'another_worse_one',
+              }),
+            }),
+          }));
+        });
+
+    it('uses advanced config to fill in DrmInfo, multiple audio robustness',
+        async () => {
+          // Leave only one drmInfo
+          manifest = shaka.test.ManifestGenerator.generate((manifest) => {
+            manifest.addVariant(0, (variant) => {
+              variant.addVideo(1, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+              variant.addAudio(2, (stream) => {
+                stream.encrypted = true;
+                stream.addDrmInfo('drm.abc');
+              });
+            });
+          });
+
+          setDecodingInfoSpy([]);
+
+          config.advanced['drm.abc'] = {
+            audioRobustness: [
+              'really_ridiculously_good', 'a_mid_one', 'another_worse_one',
+            ],
+            videoRobustness: ['good'],
+            serverCertificate: null,
+            serverCertificateUri: '',
+            sessionType: 'persistent-license',
+            individualizationServer: '',
+            distinctiveIdentifierRequired: true,
+            persistentStateRequired: true,
+            headers: {},
+          };
+          drmEngine.configure(config);
+
+          const variants = manifest.variants;
+          await expectAsync(
+              drmEngine.initForPlayback(variants, manifest.offlineSessionIds))
+              .toBeRejected();
+
+          expect(drmEngine.initialized()).toBe(false);
+          expect(decodingInfoSpy).toHaveBeenCalledTimes(3);
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'really_ridiculously_good',
+              }),
+              video: containing({
+                robustness: 'good',
+              }),
+            }),
+          }));
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'a_mid_one',
+              }),
+              video: containing({
+                robustness: 'good',
+              }),
+            }),
+          }));
+          expect(decodingInfoSpy).toHaveBeenCalledWith(containing({
+            keySystemConfiguration: containing({
+              keySystem: 'drm.abc',
+              distinctiveIdentifier: 'required',
+              persistentState: 'required',
+              sessionTypes: ['persistent-license'],
+              initDataType: 'cenc',
+              audio: containing({
+                robustness: 'another_worse_one',
+              }),
+              video: containing({
+                robustness: 'good',
+              }),
+            }),
+          }));
+        });
 
     it('prefers advanced config from manifest if present', async () => {
       // Leave only one drmInfo
@@ -588,8 +824,8 @@ describe('DrmEngine', () => {
       });
 
       config.advanced['drm.abc'] = {
-        audioRobustness: 'bad',
-        videoRobustness: 'so_bad_it_hurts',
+        audioRobustness: ['bad'],
+        videoRobustness: ['so_bad_it_hurts'],
         serverCertificate: null,
         serverCertificateUri: '',
         sessionType: '',
@@ -994,7 +1230,7 @@ describe('DrmEngine', () => {
       expect(session.generateRequest)
           .toHaveBeenCalledWith('keyids', jasmine.any(Uint8Array));
 
-      const initData = /** @type {{kids: !Array.<string>}} */(JSON.parse(
+      const initData = /** @type {{kids: !Array<string>}} */(JSON.parse(
           shaka.util.StringUtils.fromUTF8(
               session.generateRequest.calls.argsFor(0)[1])));
       const keyId1 = Uint8ArrayUtils.toHex(
@@ -1700,7 +1936,9 @@ describe('DrmEngine', () => {
         keys: [
           {kid: '3q2-796tvu_erb7v3q2-7w',
             k: 'GGdTCRhnUwkYZ1MJGGdTCQ', kty: 'oct'},
+          // cspell: disable-next-line
           {kid: 'AgMFBwEQEwFwGQIwKQMQNw',
+            // cspell: disable-next-line
             k: 'AwUHATAjAyBCAQgEJQmAMw', kty: 'oct'},
         ],
       });
@@ -1887,7 +2125,7 @@ describe('DrmEngine', () => {
       p.resolve();  // Success for drm.abc.
       await expectAsync(init).toBeRejected();
       // Due to the interruption, we never created MediaKeys.
-      expect(shaka.util.DrmUtils.keySystem(drmEngine.getDrmInfo())).toBe('');
+      expect(shaka.drm.DrmUtils.keySystem(drmEngine.getDrmInfo())).toBe('');
       expect(drmEngine.initialized()).toBe(false);
     });
 
@@ -2187,8 +2425,8 @@ describe('DrmEngine', () => {
       });
 
       config.advanced['drm.abc'] = {
-        audioRobustness: 'good',
-        videoRobustness: 'really_really_ridiculously_good',
+        audioRobustness: ['good'],
+        videoRobustness: ['really_really_ridiculously_good'],
         distinctiveIdentifierRequired: true,
         serverCertificate: null,
         serverCertificateUri: '',
@@ -2556,14 +2794,14 @@ describe('DrmEngine', () => {
    */
   function createAdvancedConfig(serverCert) {
     return {
-      audioRobustness: '',
+      audioRobustness: [],
       distinctiveIdentifierRequired: false,
       persistentStateRequired: false,
       serverCertificate: serverCert,
       serverCertificateUri: '',
       individualizationServer: '',
       sessionType: '',
-      videoRobustness: '',
+      videoRobustness: [],
       headers: {},
     };
   }
@@ -2577,7 +2815,7 @@ describe('DrmEngine', () => {
   }
 
   /**
-   * @param {function(!Array.<shaka.extern.DrmInfo>)} callback
+   * @param {function(!Array<shaka.extern.DrmInfo>)} callback
    */
   function tweakDrmInfos(callback) {
     if (manifest.variants[0].video.encrypted) {

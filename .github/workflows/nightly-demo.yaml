@@ -22,16 +22,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
-
-      # The nightly demo has its own receiver app ID that points to the nightly
-      # demo itself for the receiver side.
-      - name: Override Cast Receiver App ID
-        run: |
-          sed \
-            -i demo/index.html \
-            -e 's/\(data-shaka-player-cast-receiver-id\)="[^"]*"/\1="07AEE832"/'
 
       - uses: ./.github/workflows/custom-actions/prep-for-appspot
 

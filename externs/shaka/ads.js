@@ -11,7 +11,7 @@
 
 /**
  * @typedef {{
- *   loadTimes: !Array.<number>,
+ *   loadTimes: !Array<number>,
  *   averageLoadTime: number,
  *   started: number,
  *   playedCompletely: number,
@@ -60,9 +60,11 @@ shaka.extern.AdCuePoint;
 /**
  * @typedef {{
  *   id: ?string,
+ *   groupId: ?string,
  *   startTime: number,
  *   endTime: ?number,
  *   uri: string,
+ *   mimeType: ?string,
  *   isSkippable: boolean,
  *   skipOffset: ?number,
  *   skipFor: ?number,
@@ -72,7 +74,9 @@ shaka.extern.AdCuePoint;
  *   once: boolean,
  *   pre: boolean,
  *   post: boolean,
- *   timelineRange: boolean
+ *   timelineRange: boolean,
+ *   loop: boolean,
+ *   overlay: ?shaka.extern.AdInterstitialOverlay
  * }}
  *
  * @description
@@ -80,6 +84,8 @@ shaka.extern.AdCuePoint;
  *
  * @property {?string} id
  *   The id of the interstitial.
+ * @property {?string} groupId
+ *   The group id of the interstitial.
  * @property {number} startTime
  *   The start time of the interstitial.
  * @property {?number} endTime
@@ -87,6 +93,8 @@ shaka.extern.AdCuePoint;
  * @property {string} uri
  *   The uri of the interstitial, can be any type that
  *   ShakaPlayer supports (either in MSE or src=)
+ * @property {?string} mimeType
+ *   The mimeType of the interstitial if known.
  * @property {boolean} isSkippable
  *   Indicate if the interstitial is skippable.
  * @property {?number} skipOffset
@@ -116,8 +124,37 @@ shaka.extern.AdCuePoint;
  * @property {boolean} timelineRange
  *   Indicates whether the  interstitial should be presented in a timeline UI
  *   as a single point or as a range.
+ * @property {boolean} loop
+ *   Indicates that the interstitials should play in loop.
+ *   Only applies if the interstitials is an overlay.
+ *   Only supported when using multiple video elements for interstitials.
+ * @property {?shaka.extern.AdInterstitialOverlay} overlay
+ *   Indicates the characteristics of the overlay
+ *   Only supported when using multiple video elements for interstitials.
+ * @exportDoc
  */
 shaka.extern.AdInterstitial;
+
+
+/**
+ * @typedef {{
+ *   viewport: {x: number, y: number},
+ *   topLeft: {x: number, y: number},
+ *   size: {x: number, y: number}
+ * }}
+ *
+ * @description
+ * Contains the ad interstitial overlay info.
+ *
+ * @property {{x: number, y: number}} viewport
+ *   The viewport in pixels.
+ * @property {{x: number, y: number}} topLeft
+ *   The topLeft in pixels.
+ * @property {{x: number, y: number}} size
+ *   The size in pixels.
+ * @exportDoc
+ */
+shaka.extern.AdInterstitialOverlay;
 
 
 /**
@@ -181,7 +218,7 @@ shaka.extern.IAdManager = class extends EventTarget {
    * @param {string} url
    * @param {Object} adsParams
    * @param {string=} backupUrl
-   * @return {!Promise.<string>}
+   * @return {!Promise<string>}
    */
   requestMediaTailorStream(url, adsParams, backupUrl) {}
 
@@ -199,7 +236,7 @@ shaka.extern.IAdManager = class extends EventTarget {
   /**
    * @param {!google.ima.dai.api.StreamRequest} imaRequest
    * @param {string=} backupUrl
-   * @return {!Promise.<string>}
+   * @return {!Promise<string>}
    */
   requestServerSideStream(imaRequest, backupUrl) {}
 
@@ -209,12 +246,12 @@ shaka.extern.IAdManager = class extends EventTarget {
   replaceServerSideAdTagParameters(adTagParameters) {}
 
   /**
-   * @return {!Array.<!shaka.extern.AdCuePoint>}
+   * @return {!Array<!shaka.extern.AdCuePoint>}
    */
   getServerSideCuePoints() {}
 
   /**
-   * @return {!Array.<!shaka.extern.AdCuePoint>}
+   * @return {!Array<!shaka.extern.AdCuePoint>}
    */
   getCuePoints() {}
 
@@ -271,6 +308,11 @@ shaka.extern.IAdManager = class extends EventTarget {
    * @return {!Promise}
    */
   addAdUrlInterstitial(url) {}
+
+  /**
+   * @return {shaka.Player}
+   */
+  getInterstitialPlayer() {}
 };
 
 

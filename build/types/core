@@ -17,12 +17,16 @@
 +../../lib/deprecate/enforcer.js
 +../../lib/deprecate/version.js
 
++../../lib/drm/drm_engine.js
++../../lib/drm/drm_utils.js
++../../lib/drm/playready.js
+
 +../../lib/media/adaptation_set.js
 +../../lib/media/adaptation_set_criteria.js
 +../../lib/media/buffering_observer.js
 +../../lib/media/closed_caption_parser.js
 +../../lib/media/content_workarounds.js
-+../../lib/media/drm_engine.js
++../../lib/media/example_based_criteria.js
 +../../lib/media/gap_jumping_controller.js
 +../../lib/media/manifest_filterer.js
 +../../lib/media/manifest_parser.js
@@ -32,6 +36,7 @@
 +../../lib/media/play_rate_controller.js
 +../../lib/media/playhead.js
 +../../lib/media/playhead_observer.js
++../../lib/media/preference_based_criteria.js
 +../../lib/media/preload_manager.js
 +../../lib/media/presentation_timeline.js
 +../../lib/media/quality_observer.js
@@ -80,7 +85,6 @@
 +../../lib/util/delayed_tick.js
 +../../lib/util/destroyer.js
 +../../lib/util/dom_utils.js
-+../../lib/util/drm_utils.js
 +../../lib/util/ebml_parser.js
 +../../lib/util/error.js
 +../../lib/util/event_manager.js
@@ -105,6 +109,7 @@
 +../../lib/util/multi_map.js
 +../../lib/util/mutex.js
 +../../lib/util/networking.js
++../../lib/util/number_utils.js
 +../../lib/util/object_utils.js
 +../../lib/util/operation_manager.js
 +../../lib/util/periods.js

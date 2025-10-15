@@ -436,8 +436,8 @@ describe('MpdUtils', () => {
      * Checks that the createTimeline works with the given timePoints and the
      * given expected results.
      *
-     * @param {!Array.<{t: ?number, d: ?number, r: ?number}>} points
-     * @param {!Array.<{start: number, end: number}>} expected
+     * @param {!Array<{t: ?number, d: ?number, r: ?number}>} points
+     * @param {!Array<{start: number, end: number}>} expected
      * @param {number} timescale
      * @param {number} presentationTimeOffset
      * @param {number} periodDuration
@@ -734,13 +734,13 @@ describe('MpdUtils', () => {
     }
 
     /**
-    * Creates an XML string with an xlink link to another URL,
-    * for use in testing recursive chains of xlink links.
-    * @param {number} variable
-    * @param {string} link
-    * @return {string}
-    * @private
-    */
+     * Creates an XML string with an xlink link to another URL,
+     * for use in testing recursive chains of xlink links.
+     * @param {number} variable
+     * @param {string} link
+     * @return {string}
+     * @private
+     */
     function makeRecursiveXMLString(variable, link) {
       const format =
           '<ToReplace xmlns="urn:mpeg:dash:schema:mpd:2011" ' +

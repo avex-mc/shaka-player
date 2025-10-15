@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// cspell:words Österreich ﺎﻠﻋﺮﺒﻳﺓ
 
 goog.provide('shaka.ui.LanguageUtils');
 
@@ -14,12 +15,13 @@ goog.require('shaka.ui.Overlay.TrackLabelFormat');
 goog.require('shaka.ui.Utils');
 goog.require('shaka.util.Dom');
 goog.require('shaka.util.LanguageUtils');
+goog.require('shaka.util.MimeUtils');
 goog.requireType('shaka.ui.Localization');
 
 
 shaka.ui.LanguageUtils = class {
   /**
-   * @param {!Array.<shaka.extern.Track>} tracks
+   * @param {!Array<shaka.extern.Track>} tracks
    * @param {!HTMLElement} langMenu
    * @param {function(!shaka.extern.Track)} onTrackSelected
    * @param {boolean} updateChosen
@@ -27,10 +29,11 @@ shaka.ui.LanguageUtils = class {
    * @param {shaka.ui.Localization} localization
    * @param {shaka.ui.Overlay.TrackLabelFormat} trackLabelFormat
    * @param {boolean} showAudioChannelCountVariants
+   * @param {boolean} showAudioCodec
    */
   static updateTracks(tracks, langMenu, onTrackSelected, updateChosen,
       currentSelectionElement, localization, trackLabelFormat,
-      showAudioChannelCountVariants) {
+      showAudioChannelCountVariants, showAudioCodec) {
     const LocIds = shaka.ui.Locales.Ids;
 
     // TODO: Do the benefits of having this common code in a method still
@@ -48,7 +51,8 @@ shaka.ui.LanguageUtils = class {
       if (!codecsByLanguage.has(track.language)) {
         codecsByLanguage.set(track.language, new Set());
       }
-      codecsByLanguage.get(track.language).add(track.audioCodec);
+      codecsByLanguage.get(track.language).add(
+          shaka.util.MimeUtils.getNormalizedCodec(track.audioCodec));
     }
     const hasDifferentAudioCodecs = (language) =>
       codecsByLanguage.has(language) && codecsByLanguage.get(language).size > 1;
@@ -74,15 +78,16 @@ shaka.ui.LanguageUtils = class {
     };
 
     const getCombination = (language, rolesString, label, channelsCount,
-        audioCodec) => {
+        audioCodec, spatialAudio) => {
       const keys = [
         language,
         rolesString,
+        spatialAudio,
       ];
       if (showAudioChannelCountVariants && channelsCount != null) {
         keys.push(channelsCount);
       }
-      if (hasDifferentAudioCodecs(language) && audioCodec) {
+      if (showAudioCodec && hasDifferentAudioCodecs(language) && audioCodec) {
         keys.push(audioCodec);
       }
       if (label &&
@@ -117,7 +122,7 @@ shaka.ui.LanguageUtils = class {
       return name ? ' ' + name : name;
     };
 
-    /** @type {!Map.<string, !Set.<string>>} */
+    /** @type {!Map<string, !Set<string>>} */
     const rolesByLanguage = new Map();
     for (const track of tracks) {
       if (!rolesByLanguage.has(track.language)) {
@@ -127,12 +132,12 @@ shaka.ui.LanguageUtils = class {
     }
 
     // 5. Add new buttons
-    /** @type {!Set.<string>} */
+    /** @type {!Set<string>} */
     const combinationsMade = new Set();
     const selectedCombination = selectedTrack ? getCombination(
         selectedTrack.language, getRolesString(selectedTrack),
         selectedTrack.label, selectedTrack.channelsCount,
-        selectedTrack.audioCodec) : '';
+        selectedTrack.audioCodec, selectedTrack.spatialAudio) : '';
 
     for (const track of tracks) {
       const language = track.language;
@@ -142,9 +147,10 @@ shaka.ui.LanguageUtils = class {
       const label = track.label;
       const channelsCount = track.channelsCount;
       const audioCodec = track.audioCodec;
+      const spatialAudio = track.spatialAudio;
       const combinationName =
           getCombination(language, rolesString, label, channelsCount,
-              audioCodec);
+              audioCodec, spatialAudio);
       if (combinationsMade.has(combinationName)) {
         continue;
       }
@@ -160,25 +166,27 @@ shaka.ui.LanguageUtils = class {
 
       span.textContent =
           shaka.ui.LanguageUtils.getLanguageName(language, localization);
+      let basicInfo = '';
+      if (showAudioCodec && showAudioChannelCountVariants &&
+          spatialAudio && audioCodec == 'ec-3') {
+        basicInfo += ' Dolby Atmos';
+      } else {
+        if (showAudioCodec && hasDifferentAudioCodecs(language)) {
+          basicInfo += getAudioCodecName(audioCodec);
+        }
+        if (showAudioChannelCountVariants) {
+          basicInfo += getChannelsCountName(channelsCount);
+        }
+      }
       switch (trackLabelFormat) {
         case shaka.ui.Overlay.TrackLabelFormat.LANGUAGE:
-          if (hasDifferentAudioCodecs(language)) {
-            span.textContent += getAudioCodecName(audioCodec);
-          }
-          if (showAudioChannelCountVariants) {
-            span.textContent += getChannelsCountName(channelsCount);
-          }
+          span.textContent += basicInfo;
           if (forced) {
             span.textContent += ' (' + forcedString + ')';
           }
           break;
         case shaka.ui.Overlay.TrackLabelFormat.ROLE:
-          if (hasDifferentAudioCodecs(language)) {
-            span.textContent += getAudioCodecName(audioCodec);
-          }
-          if (showAudioChannelCountVariants) {
-            span.textContent += getChannelsCountName(channelsCount);
-          }
+          span.textContent += basicInfo;
           if (!rolesString) {
             // Fallback behavior. This probably shouldn't happen.
             shaka.log.alwaysWarn('Track #' + track.id + ' does not have a ' +
@@ -192,12 +200,7 @@ shaka.ui.LanguageUtils = class {
           }
           break;
         case shaka.ui.Overlay.TrackLabelFormat.LANGUAGE_ROLE:
-          if (hasDifferentAudioCodecs(language)) {
-            span.textContent += getAudioCodecName(audioCodec);
-          }
-          if (showAudioChannelCountVariants) {
-            span.textContent += getChannelsCountName(channelsCount);
-          }
+          span.textContent += basicInfo;
           if (rolesString) {
             span.textContent += ': ' + rolesString;
           }

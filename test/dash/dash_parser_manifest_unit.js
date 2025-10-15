@@ -53,8 +53,6 @@ describe('DashParser Manifest', () => {
       onEvent: shaka.test.Util.spyFunc(onEventSpy),
       onError: fail,
       isLowLatencyMode: () => false,
-      isAutoLowLatencyMode: () => false,
-      enableLowLatencyMode: () => {},
       updateDuration: () => {},
       newDrmInfo: (stream) => {},
       onManifestUpdated: () => {},
@@ -73,15 +71,15 @@ describe('DashParser Manifest', () => {
   /**
    * Makes a series of tests for the given manifest type.
    *
-   * @param {!Array.<string>} startLines
-   * @param {!Array.<string>} endLines
+   * @param {!Array<string>} startLines
+   * @param {!Array<string>} endLines
    * @param {shaka.extern.Manifest} expected
    */
   function makeTestsForEach(startLines, endLines, expected) {
     /**
      * Makes manifest text for testing.
      *
-     * @param {!Array.<string>} lines
+     * @param {!Array<string>} lines
      * @return {string}
      */
     function makeTestManifest(lines) {
@@ -170,7 +168,6 @@ describe('DashParser Manifest', () => {
           manifest.sequenceMode = true;
           manifest.type = shaka.media.ManifestParser.DASH;
           manifest.anyTimeline();
-          manifest.minBufferTime = 75;
           manifest.addPartialVariant((variant) => {
             variant.language = 'en';
             variant.bandwidth = 200;
@@ -256,7 +253,6 @@ describe('DashParser Manifest', () => {
           manifest.sequenceMode = false;
           manifest.type = shaka.media.ManifestParser.DASH;
           manifest.anyTimeline();
-          manifest.minBufferTime = 75;
           manifest.addPartialVariant((variant) => {
             variant.language = 'en';
             variant.bandwidth = 200;
@@ -544,6 +540,28 @@ describe('DashParser Manifest', () => {
     expect(stream.spatialAudio).toBe(true);
   });
 
+  it('Detects spatial audio by codec and bandwidth', async () => {
+    const source = [
+      '<MPD>',
+      '  <Period duration="PT30M">',
+      '    <AdaptationSet mimeType="audio/mp4" lang="\u2603">',
+      '      <Representation bandwidth="384000" codecs="ec-3">',
+      '        <BaseURL>http://example.com</BaseURL>',
+      '        <SegmentTemplate media="2.mp4" duration="1" />',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', source);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+    const stream = manifest.variants[0].audio;
+    expect(stream.spatialAudio).toBe(true);
+  });
+
   it('correctly parses CEA-608 closed caption tags without channel numbers',
       async () => {
         const source = [
@@ -663,7 +681,7 @@ describe('DashParser Manifest', () => {
     });
 
     /**
-     * @param {!Array.<string>} lines
+     * @param {!Array<string>} lines
      * @return {string}
      */
     function makeManifest(lines) {
@@ -1452,7 +1470,7 @@ describe('DashParser Manifest', () => {
   describe('AudioChannelConfiguration', () => {
     /**
      * @param {?number} expectedNumChannels The expected number of channels
-     * @param {!Object.<string, string>} schemeMap A map where the map key is
+     * @param {!Object<string, string>} schemeMap A map where the map key is
      *   the AudioChannelConfiguration's schemeIdUri attribute, and the map
      *   value is the value attribute.
      * @return {!Promise}
@@ -1759,56 +1777,6 @@ describe('DashParser Manifest', () => {
     expect(stream).toBeUndefined();
   });
 
-  it('override manifest value if ignoreMinBufferTime is true', async () => {
-    const manifestText = [
-      '<MPD minBufferTime="PT75S">',
-      '  <Period id="1" duration="PT30S">',
-      '    <AdaptationSet id="1" mimeType="video/mp4">',
-      '      <Representation id="video-sd" width="640" height="480">',
-      '        <BaseURL>v-sd.mp4</BaseURL>',
-      '        <SegmentBase indexRange="100-200" />',
-      '      </Representation>',
-      '    </AdaptationSet>',
-      '  </Period>',
-      '</MPD>',
-    ].join('\n');
-
-    fakeNetEngine.setResponseText('dummy://foo', manifestText);
-    const config = shaka.util.PlayerConfiguration.createDefault().manifest;
-    config.dash.ignoreMinBufferTime = true;
-    parser.configure(config);
-
-    /** @type {shaka.extern.Manifest} */
-    const manifest = await parser.start('dummy://foo', playerInterface);
-    const minBufferTime = manifest.minBufferTime;
-    expect(minBufferTime).toBe(0);
-  });
-
-  it('get manifest value if ignoreMinBufferTime is false', async () => {
-    const manifestText = [
-      '<MPD minBufferTime="PT75S">',
-      '  <Period id="1" duration="PT30S">',
-      '    <AdaptationSet id="1" mimeType="video/mp4">',
-      '      <Representation id="video-sd" width="640" height="480">',
-      '        <BaseURL>v-sd.mp4</BaseURL>',
-      '        <SegmentBase indexRange="100-200" />',
-      '      </Representation>',
-      '    </AdaptationSet>',
-      '  </Period>',
-      '</MPD>',
-    ].join('\n');
-
-    fakeNetEngine.setResponseText('dummy://foo', manifestText);
-    const config = shaka.util.PlayerConfiguration.createDefault().manifest;
-    config.dash.ignoreMinBufferTime = false;
-    parser.configure(config);
-
-    /** @type {shaka.extern.Manifest} */
-    const manifest = await parser.start('dummy://foo', playerInterface);
-    const minBufferTime = manifest.minBufferTime;
-    expect(minBufferTime).toBe(75);
-  });
-
   it('honors the ignoreMaxSegmentDuration config', async () => {
     const manifestText = [
       '<MPD maxSegmentDuration="PT5S">',
@@ -1919,9 +1887,9 @@ describe('DashParser Manifest', () => {
   });
 
   it('Uses 1.5 times minBufferTime as default presentation delay', async () => {
-    // When sugguestedPresentDelay should be ignored, and
-    // config.defaultpresentdelay is not set other than 0, use 1.5*minBufferTime
-    // as the presentationDelay.
+    // When suggestedPresentDelay should be ignored, and
+    // config.defaultPresentationDelay is not set other than 0,
+    // use 1.5*minBufferTime as the presentationDelay.
     const manifestText = [
       '<MPD minBufferTime="PT2S" suggestedPresentationDelay="PT25S">',
       '  <Period id="1" duration="PT30S">',
@@ -1944,7 +1912,7 @@ describe('DashParser Manifest', () => {
     const manifest = await parser.start('dummy://foo', playerInterface);
     const presentationTimeline = manifest.presentationTimeline;
     const presentationDelay = presentationTimeline.getDelay();
-    expect(presentationDelay).toBe(1.5*manifest.minBufferTime);
+    expect(presentationDelay).toBe(3);
   });
 
   it('Honors the ignoreEmptyAdaptationSet config', async () => {
@@ -2669,9 +2637,9 @@ describe('DashParser Manifest', () => {
   });
 
   /**
-     * @param {!Array.<number>} periods Start time of multiple periods
-     * @return {string}
-     */
+   * @param {!Array<number>} periods Start time of multiple periods
+   * @return {string}
+   */
   function buildManifestWithPeriodStartTime(periods) {
     const mpdTemplate = [
       `<MPD type="dynamic"`,
@@ -3376,7 +3344,7 @@ describe('DashParser Manifest', () => {
       '  <Period id="2" start="PT31S" duration="PT30S">',
       '    <AdaptationSet id="2" mimeType="video/mp4">',
       '      <EssentialProperty schemeIdUri="urn:dvb:dash:fontdownload:2014"',
-      '         value="1" dvb:url="htpps://foo/foo2.woff"',
+      '         value="1" dvb:url="https://foo/foo2.woff"',
       '         dvb:mimeType="application/font-woff" dvb:fontFamily="foo2"/>',
       '      <Representation id="video" bandwidth="1">',
       '        <SegmentBase indexRange="100-200" />',
@@ -3391,7 +3359,7 @@ describe('DashParser Manifest', () => {
     await parser.start('dummy://foo', playerInterface);
     expect(addFontSpy).toHaveBeenCalledTimes(2);
     expect(addFontSpy).toHaveBeenCalledWith('foo', 'dummy://foo/foo.woff');
-    expect(addFontSpy).toHaveBeenCalledWith('foo2', 'htpps://foo/foo2.woff');
+    expect(addFontSpy).toHaveBeenCalledWith('foo2', 'https://foo/foo2.woff');
   });
 
   // DASH: Annex I
@@ -3710,5 +3678,74 @@ describe('DashParser Manifest', () => {
     const timeline = manifest.presentationTimeline;
     expect(timeline.getSeekRangeStart()).toBe(0);
     expect(timeline.getSeekRangeEnd()).toBe(32);
+  });
+
+  it('supports scte214:supplementalCodecs', async () => {
+    const manifestText = [
+      '<MPD type="static" xmlns:scte214="urn:scte:dash:scte214-extensions">',
+      '  <Period id="0" duration="PT2S">',
+      '    <AdaptationSet id="1" mimeType="video/mp4">',
+      '      <Representation id="2" width="640" height="480"',
+      '          codecs="av01.0.04M.10.0.111.09.16.09.0"',
+      '          scte214:supplementalCodecs="dav1.10.01">',
+      '        <SegmentTemplate startNumber="1" media="l-$Number$.mp4">',
+      '          <SegmentTimeline>',
+      '            <S t="0" d="2" />',
+      '          </SegmentTimeline>',
+      '        </SegmentTemplate>',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', manifestText);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+
+    expect(manifest.variants.length).toBe(2);
+    expect(manifest.textStreams.length).toBe(0);
+
+    const video1 = manifest.variants[0] && manifest.variants[0].video;
+    expect(video1.codecs).toBe('av01.0.04M.10.0.111.09.16.09.0');
+
+    const video2 = manifest.variants[1] && manifest.variants[1].video;
+    expect(video2.codecs).toBe('dav1.10.01');
+  });
+
+  it('ignore scte214:supplementalCodecs by config', async () => {
+    const manifestText = [
+      '<MPD type="static" xmlns:scte214="urn:scte:dash:scte214-extensions">',
+      '  <Period id="0" duration="PT2S">',
+      '    <AdaptationSet id="1" mimeType="video/mp4">',
+      '      <Representation id="2" width="640" height="480"',
+      '          codecs="av01.0.04M.10.0.111.09.16.09.0"',
+      '          scte214:supplementalCodecs="dav1.10.01">',
+      '        <SegmentTemplate startNumber="1" media="l-$Number$.mp4">',
+      '          <SegmentTimeline>',
+      '            <S t="0" d="2" />',
+      '          </SegmentTimeline>',
+      '        </SegmentTemplate>',
+      '      </Representation>',
+      '    </AdaptationSet>',
+      '  </Period>',
+      '</MPD>',
+    ].join('\n');
+
+    fakeNetEngine.setResponseText('dummy://foo', manifestText);
+
+    const config = shaka.util.PlayerConfiguration.createDefault().manifest;
+    config.dash.ignoreSupplementalCodecs = true;
+    parser.configure(config);
+
+    /** @type {shaka.extern.Manifest} */
+    const manifest = await parser.start('dummy://foo', playerInterface);
+
+    expect(manifest.variants.length).toBe(1);
+    expect(manifest.textStreams.length).toBe(0);
+
+    const video1 = manifest.variants[0] && manifest.variants[0].video;
+    expect(video1.codecs).toBe('av01.0.04M.10.0.111.09.16.09.0');
   });
 });

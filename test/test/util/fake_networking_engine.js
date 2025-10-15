@@ -15,12 +15,13 @@
 shaka.test.FakeNetworkingEngine = class {
   constructor() {
     /**
-     * @private {!Map.<
+     * @private {!Map<
      *    string,
-     *    shaka.test.FakeNetworkingEngine.MockedResponse>} */
+     *    shaka.test.FakeNetworkingEngine.MockedResponse>}
+     */
     this.responseMap_ = new Map();
 
-    /** @private {!Map.<string, !Object.<string, string>>} */
+    /** @private {!Map<string, !Object<string, string>>} */
     this.headersMap_ = new Map();
 
     /** @private {?BufferSource} */
@@ -55,6 +56,10 @@ shaka.test.FakeNetworkingEngine = class {
     /** @type {!jasmine.Spy} */
     this.setMinBytesForProgressEvents =
         jasmine.createSpy('setMinBytesForProgressEvents').and.stub();
+
+    /** @type {!jasmine.Spy} */
+    this.clearCommonAccessTokenMap =
+        jasmine.createSpy('clearCommonAccessTokenMap').and.stub();
 
     /** @private {number} */
     this.maxUris_ = 1;
@@ -134,6 +139,7 @@ shaka.test.FakeNetworkingEngine = class {
         originalUri: requestedUri,
         data: result,
         headers: headers,
+        originalRequest: request,
       };
 
       // Modify the response using the response filter, this allows the app
@@ -266,7 +272,7 @@ shaka.test.FakeNetworkingEngine = class {
    * Sets the headers for a specific uri.
    *
    * @param {string} uri
-   * @param {!Object.<string, string>} headers
+   * @param {!Object<string, string>} headers
    * @return {!shaka.test.FakeNetworkingEngine}
    */
   setHeaders(uri, headers) {
@@ -396,6 +402,6 @@ shaka.test.FakeNetworkingEngine = class {
  * A callback that creates a response for a given URI.
  * The callback passed in to this method, "abortCheck", returns whether or not
  * the network request has been aborted, at time of call.
- * @typedef {function(function():boolean):!Promise.<BufferSource>}
+ * @typedef {function(function(): boolean): !Promise<BufferSource>}
  */
 shaka.test.FakeNetworkingEngine.MockedResponse;

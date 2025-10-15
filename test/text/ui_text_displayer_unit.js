@@ -24,7 +24,7 @@ describe('UITextDisplayer', () => {
    *   font-size: '10px',
    * }
    * @param {string} cssStr
-   * @return {!Object.<string, string|number>}
+   * @return {!Object<string, string | number>}
    */
   function parseCssText(cssStr) {
     // Remove the white spaces in the string.
@@ -51,8 +51,7 @@ describe('UITextDisplayer', () => {
 
   beforeEach(() => {
     video.currentTime = 0;
-    textDisplayer = new shaka.text.UITextDisplayer(
-        video, videoContainer, {captionsUpdatePeriod: 0.25});
+    textDisplayer = new shaka.text.UITextDisplayer(video, videoContainer);
   });
 
   afterEach(async () => {

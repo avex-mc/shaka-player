@@ -95,13 +95,13 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     /** @private {boolean} */
     this.isSeeking_ = false;
 
-    /** @private {!Array.<!HTMLElement>} */
+    /** @private {!Array<!HTMLElement>} */
     this.menus_ = [];
 
     /**
      * Individual controls which, when hovered or tab-focused, will force the
      * controls to be shown.
-     * @private {!Array.<!Element>}
+     * @private {!Array<!Element>}
      */
     this.showOnHoverControls_ = [];
 
@@ -167,7 +167,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     /** @private {?number} */
     this.lastTouchEventTime_ = null;
 
-    /** @private {!Array.<!shaka.extern.IUIElement>} */
+    /** @private {!Array<!shaka.extern.IUIElement>} */
     this.elements_ = [];
 
     /** @private {shaka.ui.Localization} */
@@ -188,7 +188,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
      * The pressed keys set is used to record which keys are currently pressed
      * down, so we can know what keys are pressed at the same time.
      * Used by the focusInsideOverflowMenu_() function.
-     * @private {!Set.<string>}
+     * @private {!Set<string>}
      */
     this.pressedKeys_ = new Set();
 
@@ -868,9 +868,11 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       return;
     }
 
-    this.player_.cancelTrickPlay();
-
     if (this.presentationIsPaused()) {
+      // If we are at the end, go back to the beginning.
+      if (this.player_.isEnded()) {
+        this.video_.currentTime = this.player_.seekRange().start;
+      }
       this.video_.play();
     } else {
       this.video_.pause();
@@ -1150,7 +1152,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
   /**
    * Adds a seekbar depending on the configuration.
    * By default an instance of shaka.ui.SeekBar is created
-   * This behaviour can be overriden by providing a SeekBar factory using the
+   * This behaviour can be overridden by providing a SeekBar factory using the
    * registerSeekBarFactory function.
    *
    * @private
@@ -1638,11 +1640,13 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
 
   /** @private */
   onPlayPauseClick_() {
-    if (this.ad_ && this.ad_.isLinear()) {
+    if (this.ad_) {
       this.playPauseAd();
-    } else {
-      this.playPausePresentation();
+      if (this.ad_.isLinear()) {
+        return;
+      }
     }
+    this.playPausePresentation();
   }
 
   /** @private */
@@ -1811,12 +1815,8 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     goog.asserts.assert(
         this.seekBar_, 'Caller of seek_ must check for seekBar_ first!');
 
-    this.seekBar_.changeTo(currentTime);
-
-    if (this.isOpaque()) {
-      // Only update the time and seek range if it's visible.
-      this.updateTimeAndSeekRange_();
-    }
+    this.video_.currentTime = currentTime;
+    this.updateTimeAndSeekRange_();
   }
 
   /**
@@ -1916,7 +1916,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       }
 
       const activeElement = document.activeElement;
-      // When only Tab key is pressed, navigate to the next elememnt.
+      // When only Tab key is pressed, navigate to the next element.
       // If it's currently focused on the last shown child element of the
       // overflow menu, let the focus move to the first child element of the
       // menu.
@@ -2204,7 +2204,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
  * @exportDoc
  */
 
-/** @private {!Map.<string, !shaka.extern.IUIElement.Factory>} */
+/** @private {!Map<string, !shaka.extern.IUIElement.Factory>} */
 shaka.ui.ControlsPanel.elementNamesToFactories_ = new Map();
 
 /** @private {?shaka.extern.IUISeekBar.Factory} */

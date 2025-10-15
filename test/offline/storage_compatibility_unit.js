@@ -222,9 +222,9 @@ filterDescribe('Storage Compatibility', offlineSupported, () => {
     });
 
     it('can remove manifests and segments', async () => {
-      /** @type {!Array.<number>} */
+      /** @type {!Array<number>} */
       const manifestKeys = [];
-      /** @type {!Array.<number>} */
+      /** @type {!Array<number>} */
       const segmentKeys = [];
 
       const manifests = await cell.getAllManifests();
@@ -279,7 +279,6 @@ filterDescribe('Storage Compatibility', offlineSupported, () => {
 
       const expected = shaka.test.ManifestGenerator.generate((manifest) => {
         manifest.anyTimeline();
-        manifest.minBufferTime = 2;
 
         manifest.addPartialVariant((variant) => {
           variant.addPartialStream(ContentType.VIDEO, (stream) => {
@@ -323,7 +322,7 @@ filterDescribe('Storage Compatibility', offlineSupported, () => {
      * Get the keys for each segment. This will include the init segments.
      *
      * @param {shaka.extern.ManifestDB} manifest
-     * @return {!Array.<number>}
+     * @return {!Array<number>}
      */
     function getAllSegmentKeys(manifest) {
       const keys = new Set();

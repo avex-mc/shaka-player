@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// cspell:words eadbeefdeadbeefdeadbeefdeadbeefd
+
 describe('DrmUtils', () => {
   describe('getCommonDrmInfos', () => {
     it('returns one array if the other is empty', () => {
@@ -20,9 +22,9 @@ describe('DrmUtils', () => {
         keyIds: new Set(['deadbeefdeadbeefdeadbeefdeadbeef']),
       };
       const returnedOne =
-          shaka.util.DrmUtils.getCommonDrmInfos([drmInfo], []);
+          shaka.drm.DrmUtils.getCommonDrmInfos([drmInfo], []);
       const returnedTwo =
-          shaka.util.DrmUtils.getCommonDrmInfos([], [drmInfo]);
+          shaka.drm.DrmUtils.getCommonDrmInfos([], [drmInfo]);
       expect(returnedOne).toEqual([drmInfo]);
       expect(returnedTwo).toEqual([drmInfo]);
     });
@@ -66,7 +68,7 @@ describe('DrmUtils', () => {
           'eadbeefdeadbeefdeadbeefdeadbeefd',
         ]),
       };
-      const returned = shaka.util.DrmUtils.getCommonDrmInfos([drmInfoVideo],
+      const returned = shaka.drm.DrmUtils.getCommonDrmInfos([drmInfoVideo],
           [drmInfoAudio]);
       expect(returned).toEqual([drmInfoDesired]);
     });
@@ -110,7 +112,7 @@ describe('DrmUtils', () => {
           'eadbeefdeadbeefdeadbeefdeadbeefd',
         ]),
       };
-      const returned = shaka.util.DrmUtils.getCommonDrmInfos([drmInfoVideo],
+      const returned = shaka.drm.DrmUtils.getCommonDrmInfos([drmInfoVideo],
           [drmInfoAudio]);
       expect(returned).toEqual([drmInfoDesired]);
     });
@@ -137,47 +139,95 @@ describe('DrmUtils', () => {
         initData: [],
         keyIds: new Set(),
       };
-      const returned1 = shaka.util.DrmUtils.getCommonDrmInfos(
+      const returned1 = shaka.drm.DrmUtils.getCommonDrmInfos(
           [drmInfo1], [drmInfo2]);
       expect(returned1).toEqual([]);
     });
   }); // describe('getCommonDrmInfos')
 
+  describe('isClearKeySystem', () => {
+    it('should return true for ClearKey', () => {
+      expect(shaka.drm.DrmUtils.isClearKeySystem(
+          'org.w3.clearkey')).toBe(true);
+    });
+
+    it('should return false for non-ClearKey key systems', () => {
+      expect(shaka.drm.DrmUtils.isClearKeySystem(
+          'com.widevine.alpha')).toBe(false);
+      expect(shaka.drm.DrmUtils.isClearKeySystem(
+          'com.microsoft.playready')).toBe(false);
+      expect(shaka.drm.DrmUtils.isClearKeySystem(
+          'com.apple.fps')).toBe(false);
+    });
+  });
+
+  describe('isWidevineKeySystem', () => {
+    it('should return true for Widevine', () => {
+      expect(shaka.drm.DrmUtils.isWidevineKeySystem(
+          'com.widevine.alpha')).toBe(true);
+      expect(shaka.drm.DrmUtils.isWidevineKeySystem(
+          'com.widevine.alpha.anything')).toBe(true);
+    });
+
+    it('should return false for non-Widevine key systems', () => {
+      expect(shaka.drm.DrmUtils.isWidevineKeySystem(
+          'com.microsoft.playready')).toBe(false);
+      expect(shaka.drm.DrmUtils.isWidevineKeySystem(
+          'com.apple.fps')).toBe(false);
+    });
+  });
+
   describe('isPlayReadyKeySystem', () => {
     it('should return true for MS & Chromecast PlayReady', () => {
-      expect(shaka.util.DrmUtils.isPlayReadyKeySystem(
+      expect(shaka.drm.DrmUtils.isPlayReadyKeySystem(
           'com.microsoft.playready')).toBe(true);
-      expect(shaka.util.DrmUtils.isPlayReadyKeySystem(
+      expect(shaka.drm.DrmUtils.isPlayReadyKeySystem(
           'com.microsoft.playready.anything')).toBe(true);
-      expect(shaka.util.DrmUtils.isPlayReadyKeySystem(
+      expect(shaka.drm.DrmUtils.isPlayReadyKeySystem(
           'com.chromecast.playready')).toBe(true);
     });
 
     it('should return false for non-PlayReady key systems', () => {
-      expect(shaka.util.DrmUtils.isPlayReadyKeySystem(
+      expect(shaka.drm.DrmUtils.isPlayReadyKeySystem(
           'com.widevine.alpha')).toBe(false);
-      expect(shaka.util.DrmUtils.isPlayReadyKeySystem(
+      expect(shaka.drm.DrmUtils.isPlayReadyKeySystem(
           'com.abc.playready')).toBe(false);
     });
   });
 
   describe('isFairPlayKeySystem', () => {
     it('should return true for FairPlay', () => {
-      expect(shaka.util.DrmUtils.isFairPlayKeySystem(
+      expect(shaka.drm.DrmUtils.isFairPlayKeySystem(
           'com.apple.fps')).toBe(true);
-      expect(shaka.util.DrmUtils.isFairPlayKeySystem(
+      expect(shaka.drm.DrmUtils.isFairPlayKeySystem(
           'com.apple.fps.1_0')).toBe(true);
-      expect(shaka.util.DrmUtils.isFairPlayKeySystem(
+      expect(shaka.drm.DrmUtils.isFairPlayKeySystem(
           'com.apple.fps.2_0')).toBe(true);
-      expect(shaka.util.DrmUtils.isFairPlayKeySystem(
+      expect(shaka.drm.DrmUtils.isFairPlayKeySystem(
           'com.apple.fps.3_0')).toBe(true);
     });
 
     it('should return false for non-FairPlay key systems', () => {
-      expect(shaka.util.DrmUtils.isFairPlayKeySystem(
+      expect(shaka.drm.DrmUtils.isFairPlayKeySystem(
           'com.widevine.alpha')).toBe(false);
-      expect(shaka.util.DrmUtils.isFairPlayKeySystem(
+      expect(shaka.drm.DrmUtils.isFairPlayKeySystem(
           'com.abc.playready')).toBe(false);
+    });
+  });
+
+  describe('isWisePlayKeySystem', () => {
+    it('should return true for WisePlay', () => {
+      expect(shaka.drm.DrmUtils.isWisePlayKeySystem(
+          'com.huawei.wiseplay')).toBe(true);
+    });
+
+    it('should return false for non-WisePlay key systems', () => {
+      expect(shaka.drm.DrmUtils.isWisePlayKeySystem(
+          'com.widevine.alpha')).toBe(false);
+      expect(shaka.drm.DrmUtils.isWisePlayKeySystem(
+          'com.microsoft.playready')).toBe(false);
+      expect(shaka.drm.DrmUtils.isWisePlayKeySystem(
+          'com.apple.fps')).toBe(false);
     });
   });
 });

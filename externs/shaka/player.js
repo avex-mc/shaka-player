@@ -92,8 +92,8 @@ shaka.extern.StateChange;
  *   manifestPeriodCount: number,
  *   manifestGapCount: number,
  *
- *   switchHistory: !Array.<shaka.extern.TrackChoice>,
- *   stateHistory: !Array.<shaka.extern.StateChange>
+ *   switchHistory: !Array<shaka.extern.TrackChoice>,
+ *   stateHistory: !Array<shaka.extern.StateChange>
  * }}
  *
  * @description
@@ -187,9 +187,9 @@ shaka.extern.StateChange;
  *   and GAP=YES occurrences. For MSS, it is always set to 0.
  *   If in src= mode or nothing is loaded, NaN.
  *
- * @property {!Array.<shaka.extern.TrackChoice>} switchHistory
+ * @property {!Array<shaka.extern.TrackChoice>} switchHistory
  *   A history of the stream changes.
- * @property {!Array.<shaka.extern.StateChange>} stateHistory
+ * @property {!Array<shaka.extern.StateChange>} stateHistory
  *   A history of the state changes.
  * @exportDoc
  */
@@ -216,23 +216,23 @@ shaka.extern.BufferedRange;
 
 /**
  * @typedef {{
- *   total: !Array.<shaka.extern.BufferedRange>,
- *   audio: !Array.<shaka.extern.BufferedRange>,
- *   video: !Array.<shaka.extern.BufferedRange>,
- *   text: !Array.<shaka.extern.BufferedRange>
+ *   total: !Array<shaka.extern.BufferedRange>,
+ *   audio: !Array<shaka.extern.BufferedRange>,
+ *   video: !Array<shaka.extern.BufferedRange>,
+ *   text: !Array<shaka.extern.BufferedRange>
  * }}
  *
  * @description
  * Contains information about the current buffered ranges.
  *
- * @property {!Array.<shaka.extern.BufferedRange>} total
+ * @property {!Array<shaka.extern.BufferedRange>} total
  *   The combined audio/video buffered ranges, reported by
  *   <code>video.buffered</code>.
- * @property {!Array.<shaka.extern.BufferedRange>} audio
+ * @property {!Array<shaka.extern.BufferedRange>} audio
  *   The buffered ranges for audio content.
- * @property {!Array.<shaka.extern.BufferedRange>} video
+ * @property {!Array<shaka.extern.BufferedRange>} video
  *   The buffered ranges for video content.
- * @property {!Array.<shaka.extern.BufferedRange>} text
+ * @property {!Array<shaka.extern.BufferedRange>} text
  *   The buffered ranges for text content.
  * @exportDoc
  */
@@ -264,8 +264,8 @@ shaka.extern.BufferedInfo;
  *   audioCodec: ?string,
  *   videoCodec: ?string,
  *   primary: boolean,
- *   roles: !Array.<string>,
- *   audioRoles: Array.<string>,
+ *   roles: !Array<string>,
+ *   audioRoles: Array<string>,
  *   accessibilityPurpose: ?shaka.media.ManifestParser.AccessibilityPurpose,
  *   forced: boolean,
  *   videoId: ?number,
@@ -343,15 +343,15 @@ shaka.extern.BufferedInfo;
  *   This can be a useful hint about which language should be the default, and
  *   indicates which track Shaka will use when the user's language preference
  *   cannot be satisfied.
- * @property {!Array.<string>} roles
+ * @property {!Array<string>} roles
  *   The roles of the track, e.g. <code>'main'</code>, <code>'caption'</code>,
  *   or <code>'commentary'</code>.
- * @property {Array.<string>} audioRoles
+ * @property {Array<string>} audioRoles
  *   The roles of the audio in the track, e.g. <code>'main'</code> or
  *   <code>'commentary'</code>. Will be null for text tracks or variant tracks
  *   without audio.
- * @property {?shaka.media.ManifestParser.AccessibilityPurpose}
- *     accessibilityPurpose
+ * @property {?shaka.media.ManifestParser.AccessibilityPurpose
+ *           } accessibilityPurpose
  *   The DASH accessibility descriptor, if one was provided for this track.
  *   For text tracks, this describes the text; otherwise, this is for the audio.
  * @property {boolean} forced
@@ -398,7 +398,7 @@ shaka.extern.Track;
 
 
 /**
- * @typedef {!Array.<!shaka.extern.Track>}
+ * @typedef {!Array<!shaka.extern.Track>}
  */
 shaka.extern.TrackList;
 
@@ -495,7 +495,8 @@ shaka.extern.Restrictions;
  *   persistentState: boolean,
  *   encryptionSchemes: !Array<string|null>,
  *   videoRobustnessLevels: !Array<string>,
- *   audioRobustnessLevels: !Array<string>
+ *   audioRobustnessLevels: !Array<string>,
+ *   minHdcpVersions: !Array<string>
  * }}
  *
  * @property {boolean} persistentState
@@ -512,6 +513,10 @@ shaka.extern.Restrictions;
  *   An array of audio robustness levels that are reported to work. An empty
  *   array indicates that none were tested. Not all key systems have a list of
  *   known robustness levels built into probeSupport().
+ * @property {!Array<string>} minHdcpVersions
+ *   An array of min HDCP levels that are reported to work. An empty
+ *   array indicates that none were tested. Not all key systems have support to
+ *   check min HDCP levels.
  * @exportDoc
  */
 shaka.extern.DrmSupportType;
@@ -519,22 +524,22 @@ shaka.extern.DrmSupportType;
 
 /**
  * @typedef {{
- *   manifest: !Object.<string, boolean>,
- *   media: !Object.<string, boolean>,
- *   drm: !Object.<string, ?shaka.extern.DrmSupportType>,
+ *   manifest: !Object<string, boolean>,
+ *   media: !Object<string, boolean>,
+ *   drm: !Object<string, ?shaka.extern.DrmSupportType>,
  *   hardwareResolution: shaka.extern.Resolution
  * }}
  *
  * @description
  * An object detailing browser support for various features.
  *
- * @property {!Object.<string, boolean>} manifest
+ * @property {!Object<string, boolean>} manifest
  *   A map of supported manifest types.
  *   The keys are manifest MIME types and file extensions.
- * @property {!Object.<string, boolean>} media
+ * @property {!Object<string, boolean>} media
  *   A map of supported media types.
  *   The keys are media MIME types.
- * @property {!Object.<string, ?shaka.extern.DrmSupportType>} drm
+ * @property {!Object<string, ?shaka.extern.DrmSupportType>} drm
  *   A map of supported key systems.
  *   The keys are the key system names.  The value is <code>null</code> if it is
  *   not supported.  Key systems not probed will not be in this dictionary.
@@ -551,7 +556,7 @@ shaka.extern.SupportType;
  * @typedef {{
  *   cueTime: ?number,
  *   data: !Uint8Array,
- *   frames: !Array.<shaka.extern.MetadataFrame>,
+ *   frames: !Array<shaka.extern.MetadataFrame>,
  *   dts: ?number,
  *   pts: ?number
  * }}
@@ -563,7 +568,7 @@ shaka.extern.SupportType;
  *
  * @property {?number} cueTime
  * @property {!Uint8Array} data
- * @property {!Array.<shaka.extern.MetadataFrame>} frames
+ * @property {!Array<shaka.extern.MetadataFrame>} frames
  * @property {?number} dts
  * @property {?number} pts
  *
@@ -648,12 +653,12 @@ shaka.extern.PlaybackStreamInfo;
  * @typedef {{
  *   startTime: number,
  *   endTime: ?number,
- *   values: !Array.<shaka.extern.MetadataFrame>
+ *   values: !Array<shaka.extern.MetadataFrame>
  * }}
  *
  * @property {number} startTime
  * @property {?number} endTime
- * @property {!Array.<shaka.extern.MetadataFrame>} values
+ * @property {!Array<shaka.extern.MetadataFrame>} values
  * @exportDoc
  */
 shaka.extern.HLSInterstitial;
@@ -704,7 +709,7 @@ shaka.extern.TimelineRegionInfo;
  *   height: ?number,
  *   mimeType: ?string,
  *   label: ?string,
- *   roles: ?Array.<string>,
+ *   roles: ?Array<string>,
  *   language: ?string,
  *   channelsCount: ?number,
  *   pixelAspectRatio: ?string,
@@ -731,7 +736,7 @@ shaka.extern.TimelineRegionInfo;
  *   The MIME type.
  * @property {?string} label
  *   The stream's label, when available.
- * @property {?Array.<string>} roles
+ * @property {?Array<string>} roles
  *   The stream's role, when available.
  * @property {?string} language
  *   The stream's language, when available.
@@ -808,13 +813,13 @@ shaka.extern.ProducerReferenceTime;
  * @typedef {{
  *   distinctiveIdentifierRequired: boolean,
  *   persistentStateRequired: boolean,
- *   videoRobustness: string,
- *   audioRobustness: string,
+ *   videoRobustness: Array<string>,
+ *   audioRobustness: Array<string>,
  *   serverCertificate: Uint8Array,
  *   serverCertificateUri: string,
  *   individualizationServer: string,
  *   sessionType: string,
- *   headers: !Object.<string, string>
+ *   headers: !Object<string, string>
  * }}
  *
  * @property {boolean} distinctiveIdentifierRequired
@@ -827,16 +832,18 @@ shaka.extern.ProducerReferenceTime;
  *   state, e.g., for persistent license storage.
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {string} videoRobustness
- *   A key-system-specific string that specifies a required security level for
- *   video.
+ * @property {Array<string>} videoRobustness
+ *   A key-system-specific Array of strings that specifies a required security
+ *   level for video. For multiple robustness levels, list items in priority
+ *   order.
  *   <br>
- *   Defaults to <code>''</code>, i.e., no specific robustness required.
- * @property {string} audioRobustness
- *   A key-system-specific string that specifies a required security level for
- *   audio.
+ *   Defaults to <code>[]</code>, i.e., no specific robustness required.
+ * @property {Array<string>} audioRobustness
+ *   A key-system-specific Array of strings that specifies a required security
+ *   level for audio. For multiple robustness levels, list items in priority
+ *   order.
  *   <br>
- *   Defaults to <code>''</code>, i.e., no specific robustness required.
+ *   Defaults to <code>[]</code>, i.e., no specific robustness required.
  * @property {Uint8Array} serverCertificate
  *   <i>An empty certificate (<code>byteLength==0</code>) will be treated as
  *   <code>null</code>.</i> <br>
@@ -853,8 +860,8 @@ shaka.extern.ProducerReferenceTime;
  *   <br>
  *   Defaults to <code>''</code>.
  * @property {string} individualizationServer
- *   The server that handles an <code>'individualiation-request'</code>.  If the
- *   server isn't given, it will default to the license server.
+ *   The server that handles an <code>'individualization-request'</code>.
+ *   If the server isn't given, it will default to the license server.
  *   <br>
  *   Defaults to <code>''</code>.
  * @property {string} sessionType
@@ -862,7 +869,7 @@ shaka.extern.ProducerReferenceTime;
  *   affect offline storage.
  *   <br>
  *   Defaults to <code>'temporary'</code>.
- * @property {!Object.<string, string>} headers
+ * @property {!Object<string, string>} headers
  *   The headers to use in the license request.
  *   <br>
  *   Defaults to <code>{}</code>.
@@ -920,33 +927,35 @@ shaka.extern.PersistentSessionMetadata;
 /**
  * @typedef {{
  *   retryParameters: shaka.extern.RetryParameters,
- *   servers: !Object.<string, string>,
- *   clearKeys: !Object.<string, string>,
+ *   servers: !Object<string, string>,
+ *   clearKeys: !Object<string, string>,
  *   delayLicenseRequestUntilPlayed: boolean,
  *   persistentSessionOnlinePlayback: boolean,
  *   persistentSessionsMetadata:
- *       !Array.<shaka.extern.PersistentSessionMetadata>,
- *   advanced: Object.<string, shaka.extern.AdvancedDrmConfiguration>,
+ *       !Array<shaka.extern.PersistentSessionMetadata>,
+ *   advanced: Object<string, shaka.extern.AdvancedDrmConfiguration>,
  *   initDataTransform:(shaka.extern.InitDataTransform|undefined),
  *   logLicenseExchange: boolean,
  *   updateExpirationTime: number,
- *   preferredKeySystems: !Array.<string>,
- *   keySystemsMapping: !Object.<string, string>,
+ *   preferredKeySystems: !Array<string>,
+ *   keySystemsMapping: !Object<string, string>,
  *   parseInbandPsshEnabled: boolean,
  *   minHdcpVersion: string,
- *   ignoreDuplicateInitData: boolean
+ *   ignoreDuplicateInitData: boolean,
+ *   defaultAudioRobustnessForWidevine: string,
+ *   defaultVideoRobustnessForWidevine: string
  * }}
  *
  * @property {shaka.extern.RetryParameters} retryParameters
  *   Retry parameters for license requests.
- * @property {!Object.<string, string>} servers
+ * @property {!Object<string, string>} servers
  *   <i>Required for all but the clear key CDM.</i> <br>
  *   A dictionary which maps key system IDs to their license servers.
  *   For example,
  *   <code>{'com.widevine.alpha': 'https://example.com/drm'}</code>.
  *   <br>
  *   Defaults to <code>{}</code>.
- * @property {!Object.<string, string>} clearKeys
+ * @property {!Object<string, string>} clearKeys
  *   <i>Forces the use of the Clear Key CDM.</i>
  *   A map of key IDs (hex or base64) to keys (hex or base64).
  *   <br>
@@ -962,11 +971,11 @@ shaka.extern.PersistentSessionMetadata;
  *   stop, as-to be able to re-use it later.
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {!Array.<PersistentSessionMetadata>} persistentSessionsMetadata
+ * @property {!Array<PersistentSessionMetadata>} persistentSessionsMetadata
  *   Persistent sessions metadata to load before starting playback.
  *   <br>
  *   Defaults to <code>[]</code>.
- * @property {Object.<string, shaka.extern.AdvancedDrmConfiguration>} advanced
+ * @property {Object<string, shaka.extern.AdvancedDrmConfiguration>} advanced
  *   <i>Optional.</i> <br>
  *   A dictionary which maps key system IDs to advanced DRM configuration for
  *   those key systems.
@@ -989,12 +998,12 @@ shaka.extern.PersistentSessionMetadata;
  *   The frequency in seconds with which to check the expiration of a session.
  *   <br>
  *   Defaults to <code>1</code>.
- * @property {!Array.<string>} preferredKeySystems
- *   Specifies the priorties of available DRM key systems.
+ * @property {!Array<string>} preferredKeySystems
+ *   Specifies the priorities of available DRM key systems.
  *   <br>
  *   Defaults <code>['com.microsoft.playready']</code> on Xbox One and
  *   PlayStation 4, and <code>[]</code> for all other browsers.
- * @property {Object.<string, string>} keySystemsMapping
+ * @property {Object<string, string>} keySystemsMapping
  *   A map of key system name to key system name.
  *   <br>
  *   Defaults to <code>{}</code>.
@@ -1013,11 +1022,21 @@ shaka.extern.PersistentSessionMetadata;
  * @property {boolean} ignoreDuplicateInitData
  *   When true indicate that the player doesn't ignore duplicate init data.
  *   Note: Tizen 2015 and 2016 models will send multiple webkitneedkey events
- *   with the same init data. If the duplicates are supressed, playback
+ *   with the same init data. If the duplicates are suppressed, playback
  *   will stall without errors.
  *   <br>
  *   Defaults to <code>false</code> on Tizen 2, and <code>true</code> for all
  *   other browsers.
+ * @property {string} defaultAudioRobustnessForWidevine
+ *   Specify the default audio security level for Widevine when audio robustness
+ *   is not specified.
+ *   <br>
+ *   Defaults to <code>'SW_SECURE_CRYPTO'</code>.
+ * @property {string} defaultVideoRobustnessForWidevine
+ *   Specify the default video security level for Widevine when video robustness
+ *   is not specified.
+ *   <br>
+ *   Defaults to <code>'SW_SECURE_DECODE'</code>.
  * @exportDoc
  */
 shaka.extern.DrmConfiguration;
@@ -1038,7 +1057,7 @@ shaka.extern.InitDataTransform;
  * @typedef {{
  *   tagName: !string,
  *   attributes: !Object<string, string>,
- *   children: !Array.<shaka.extern.xml.Node | string>,
+ *   children: !Array<shaka.extern.xml.Node | string>,
  *   parent: ?shaka.extern.xml.Node
  * }}
  *
@@ -1049,7 +1068,7 @@ shaka.extern.InitDataTransform;
  *   The name of the element
  * @property {!object} attributes
  *   The attributes of the element
- * @property {!Array.<shaka.extern.xml.Node | string>} children
+ * @property {!Array<shaka.extern.xml.Node | string>} children
  *   The child nodes or string body of the element
  * @property {?shaka.extern.xml.Node} parent
  *   The parent of the current element
@@ -1070,14 +1089,15 @@ shaka.extern.xml.Node;
  *   ignoreSuggestedPresentationDelay: boolean,
  *   ignoreEmptyAdaptationSet: boolean,
  *   ignoreMaxSegmentDuration: boolean,
- *   keySystemsByURI: !Object.<string, string>,
+ *   keySystemsByURI: !Object<string, string>,
  *   manifestPreprocessor: function(!Element),
  *   manifestPreprocessorTXml: function(!shaka.extern.xml.Node),
  *   sequenceMode: boolean,
  *   multiTypeVariantsAllowed: boolean,
  *   useStreamOnceInPeriodFlattening: boolean,
  *   updatePeriod: number,
- *   enableFastSwitching: boolean
+ *   enableFastSwitching: boolean,
+ *   ignoreSupplementalCodecs: boolean
  * }}
  *
  * @property {string} clockSyncUri
@@ -1104,8 +1124,7 @@ shaka.extern.xml.Node;
  *   Defaults to <code>false</code>.
  * @property {boolean} ignoreMinBufferTime
  *   If true will cause DASH parser to ignore <code>minBufferTime</code> from
- *   manifest. It allows player config to take precedence over manifest for
- *   <code>rebufferingGoal</code>.
+ *   manifest.
  *   <br>
  *   Defaults to <code>false</code>.
  * @property {boolean} autoCorrectDrift
@@ -1137,7 +1156,7 @@ shaka.extern.xml.Node;
  *   <code>maxSegmentDuration</code> from manifest.
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {Object.<string, string>} keySystemsByURI
+ * @property {Object<string, string>} keySystemsByURI
  *   A map of scheme URI to key system name. Defaults to default key systems
  *   mapping handled by Shaka.
  * @property {function(!Element)} manifestPreprocessor
@@ -1183,6 +1202,10 @@ shaka.extern.xml.Node;
  *   If false, disables fast switching track recognition.
  *   <br>
  *   Defaults to <code>true</code>.
+ * @property {boolean} ignoreSupplementalCodecs
+ *   If true, ignores supplemental codecs.
+ *   <br>
+ *   Defaults to <code>false</code>.
  * @exportDoc
  */
 shaka.extern.DashManifestConfiguration;
@@ -1203,7 +1226,8 @@ shaka.extern.DashManifestConfiguration;
  *   disableCodecGuessing: boolean,
  *   disableClosedCaptionsDetection: boolean,
  *   allowLowLatencyByteRangeOptimization: boolean,
- *   updatePeriod: number
+ *   updatePeriod: number,
+ *   ignoreSupplementalCodecs: boolean
  * }}
  *
  * @property {boolean} ignoreTextStreamFailures
@@ -1232,7 +1256,7 @@ shaka.extern.DashManifestConfiguration;
  *   incorrect or malformed.
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {!Array.<string>} ignoreManifestProgramDateTimeForTypes
+ * @property {!Array<string>} ignoreManifestProgramDateTimeForTypes
  *   An array of strings representing types for which
  *   <code>EXT-X-PROGRAM-DATE-TIME</code> should be ignored. Only used if the
  *   the main ignoreManifestProgramDateTime is set to false.
@@ -1297,6 +1321,10 @@ shaka.extern.DashManifestConfiguration;
  *   trigger a new download of the manifest.
  *   <br>
  *   Defaults to <code>-1</code>.
+ * @property {boolean} ignoreSupplementalCodecs
+ *   If true, ignores supplemental codecs.
+ *   <br>
+ *   Defaults to <code>false</code>.
  * @exportDoc
  */
 shaka.extern.HlsManifestConfiguration;
@@ -1307,7 +1335,7 @@ shaka.extern.HlsManifestConfiguration;
  *   manifestPreprocessor: function(!Element),
  *   manifestPreprocessorTXml: function(!shaka.extern.xml.Node),
  *   sequenceMode: boolean,
- *   keySystemsBySystemId: !Object.<string, string>
+ *   keySystemsBySystemId: !Object<string, string>
  * }}
  *
  * @property {function(!Element)} manifestPreprocessor
@@ -1324,7 +1352,7 @@ shaka.extern.HlsManifestConfiguration;
  *   "sequence mode" (ignoring their internal timestamps).
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {Object.<string, string>} keySystemsBySystemId
+ * @property {Object<string, string>} keySystemsBySystemId
  *   A map of system id to key system name. Defaults to default key systems
  *   mapping handled by Shaka.
  * @exportDoc
@@ -1382,7 +1410,8 @@ shaka.extern.MssManifestConfiguration;
  * @property {number} defaultPresentationDelay
  *   For DASH, it's a default <code>presentationDelay</code> value if
  *   <code>suggestedPresentationDelay</code> is missing in the MPEG DASH
- *   manifest. The default value is <code>1.5 * minBufferTime</code> if not
+ *   manifest. The default value is the lower of <code>1.5 *
+ *   minBufferTime</code> and <code>segmentAvailabilityDuration</code> if not
  *   configured or set as 0.
  *   For HLS, the default value is 3 segments duration if not configured or
  *   set as 0.
@@ -1517,8 +1546,8 @@ shaka.extern.DynamicTargetLatencyConfiguration;
  *   Number of seconds that playback stays in panic mode after a rebuffering.
  *   <br>
  *   Defaults to <code>60</code>.
- * @property {shaka.extern.DynamicTargetLatencyConfiguration}
- * dynamicTargetLatency
+ * @property {shaka.extern.DynamicTargetLatencyConfiguration
+ *           } dynamicTargetLatency
  *
  *   The dynamic target latency config for dynamically adjusting the target
  *   latency to be closer to edge when network conditions are good and to back
@@ -1551,10 +1580,10 @@ shaka.extern.LiveSyncConfiguration;
  *   useNativeHlsForFairPlay: boolean,
  *   inaccurateManifestTolerance: number,
  *   lowLatencyMode: boolean,
- *   autoLowLatencyMode: boolean,
  *   forceHTTP: boolean,
  *   forceHTTPS: boolean,
  *   minBytesForProgressEvents: number,
+ *   preferNativeDash: boolean,
  *   preferNativeHls: boolean,
  *   updateIntervalSeconds: number,
  *   observeQualityChanges: boolean,
@@ -1570,7 +1599,6 @@ shaka.extern.LiveSyncConfiguration;
  *   vodDynamicPlaybackRate: boolean,
  *   vodDynamicPlaybackRateLowBufferRate: number,
  *   vodDynamicPlaybackRateBufferRatio: number,
- *   infiniteLiveStreamDuration: boolean,
  *   preloadNextUrlWindow: number,
  *   loadTimeout: number,
  *   clearDecodingCache: boolean,
@@ -1591,8 +1619,9 @@ shaka.extern.LiveSyncConfiguration;
  *   buffer before it can begin playback or can continue playback after it has
  *   entered into a buffering state (i.e., after it has depleted one more
  *   more of its buffers).
+ *   When the value is 0, the playback rate is not used to control the buffer.
  *   <br>
- *   Defaults to <code>2</code>.
+ *   Defaults to <code>0</code>.
  * @property {number} bufferingGoal
  *   The number of seconds of content that the StreamingEngine will attempt to
  *   buffer ahead of the playhead. This value must be greater than or equal to
@@ -1662,7 +1691,7 @@ shaka.extern.LiveSyncConfiguration;
  *   Defaults to <code>5</code>.
  * @property {number} safeSeekEndOffset
  *   The amount of seconds that should be added when repositioning the playhead
- *   after falling out of the seakable end range. This is helpful for live
+ *   after falling out of the seekable end range. This is helpful for live
  *   stream with a lot of GAP. This will reposition the playback in the past
  *   and avoid to be block at the edge and buffer at the next GAP
  *   <br>
@@ -1708,13 +1737,6 @@ shaka.extern.LiveSyncConfiguration;
  *   other things, see: docs/tutorials/config.md
  *   <br>
  *   Defaults to <code>false</code>.
- * @property {boolean} autoLowLatencyMode
- *   If the stream is low latency and the user has not configured the
- *   lowLatencyMode, but if it has been configured to activate the
- *   lowLatencyMode if a stream of this type is detected, we automatically
- *   activate the lowLatencyMode.
- *   <br>
- *   Defaults to <code>false</code>.
  * @property {boolean} forceHTTP
  *   If true, if the protocol is HTTPs change it to HTTP.
  *   If both forceHTTP and forceHTTPS are set, forceHTTPS wins.
@@ -1730,6 +1752,10 @@ shaka.extern.LiveSyncConfiguration;
  *   if possible. To avoid issues around feeding ABR with request history, this
  *   value should be greater than or equal to `abr.advanced.minBytes`.
  *   By default equals 16e3 (the same value as `abr.advanced.minBytes`).
+ * @property {boolean} preferNativeDash
+ *   If true, prefer native DASH playback when possible, regardless of platform.
+ *   <br>
+ *   Defaults to <code>false</code>.
  * @property {boolean} preferNativeHls
  *   If true, prefer native HLS playback when possible, regardless of platform.
  *   <br>
@@ -1799,11 +1825,6 @@ shaka.extern.LiveSyncConfiguration;
  *   <code>vodDynamicPlaybackRateLowBufferRate</code>.
  *   <br>
  *   Defaults to <code>0.5</code>.
- * @property {boolean} infiniteLiveStreamDuration
- *   If <code>true</code>, the media source live duration
- *   set as a<code>Infinity</code>
- *   <br>
- *   Defaults to <code>false</code>.
  * @property {number} preloadNextUrlWindow
  *   The window of time at the end of the presentation to begin preloading the
  *   next URL, such as one specified by a urn:mpeg:dash:chaining:2016 element
@@ -1875,7 +1896,7 @@ shaka.extern.StreamingConfiguration;
  *   <br><br>
  *   See https://github.com/shaka-project/shaka-player/issues/2759.
  *   <br><br>
- *   If you know you don't need this, you canset this value to
+ *   If you know you don't need this, you can set this value to
  *   <code>false</code> to gain a few milliseconds on loading time and seek
  *   time.
  *   <br><br>
@@ -2101,7 +2122,8 @@ shaka.extern.AdvancedAbrConfiguration;
  *   sessionId: string,
  *   contentId: string,
  *   rtpSafetyFactor: number,
- *   includeKeys: !Array<string>
+ *   includeKeys: !Array<string>,
+ *   version: number
  * }}
  *
  * @description
@@ -2140,6 +2162,12 @@ shaka.extern.AdvancedAbrConfiguration;
  *   will be included.
  *   <br>
  *   Defaults to <code>[]</code>.
+ * @property {number} version
+ *   The CMCD version.
+ *   Valid values are <code>1</code> or <code>2</code>, corresponding to CMCD v1
+ *   and CMCD v2 specifications, respectively.
+ *   <br>
+ *   Defaults to <code>1</code>.
  * @exportDoc
  */
 shaka.extern.CmcdConfiguration;
@@ -2230,8 +2258,8 @@ shaka.extern.LcevcConfiguration;
  *   numberOfParallelDownloads: number
  * }}
  *
- * @property {function(shaka.extern.TrackList):!Promise<shaka.extern.TrackList>}
- *     trackSelectionCallback
+ * @property {function(shaka.extern.TrackList):
+ *              !Promise<shaka.extern.TrackList>} trackSelectionCallback
  *   Called inside <code>store()</code> to determine which tracks to save from a
  *   manifest. It is passed an array of Tracks from the manifest and it should
  *   return an array of the tracks to store.
@@ -2290,6 +2318,7 @@ shaka.extern.TextDisplayerConfiguration;
  *   streaming: shaka.extern.StreamingConfiguration,
  *   mediaSource: shaka.extern.MediaSourceConfiguration,
  *   abrFactory: shaka.extern.AbrManager.Factory,
+ *   adaptationSetCriteriaFactory: shaka.media.AdaptationSetCriteria.Factory,
  *   abr: shaka.extern.AbrConfiguration,
  *   cmcd: shaka.extern.CmcdConfiguration,
  *   cmsd: shaka.extern.CmsdConfiguration,
@@ -2301,14 +2330,14 @@ shaka.extern.TextDisplayerConfiguration;
  *   preferredTextLanguage: string,
  *   preferredVariantRole: string,
  *   preferredTextRole: string,
- *   preferredVideoCodecs: !Array.<string>,
- *   preferredAudioCodecs: !Array.<string>,
- *   preferredTextFormats: !Array.<string>,
+ *   preferredVideoCodecs: !Array<string>,
+ *   preferredAudioCodecs: !Array<string>,
+ *   preferredTextFormats: !Array<string>,
  *   preferredAudioChannelCount: number,
  *   preferredVideoHdrLevel: string,
  *   preferredVideoLayout: string,
  *   preferredVideoLabel: string,
- *   preferredDecodingAttributes: !Array.<string>,
+ *   preferredDecodingAttributes: !Array<string>,
  *   preferForcedSubs: boolean,
  *   preferSpatialAudio: boolean,
  *   restrictions: shaka.extern.Restrictions,
@@ -2335,6 +2364,9 @@ shaka.extern.TextDisplayerConfiguration;
  *   Media source configuration and settings.
  * @property {shaka.extern.AbrManager.Factory} abrFactory
  *   A factory to construct an abr manager.
+ * @property {shaka.media.AdaptationSetCriteria.Factory
+ *           } adaptationSetCriteriaFactory
+ *   A factory to construct an adaptation set criteria.
  * @property {shaka.extern.AbrConfiguration} abr
  *   ABR configuration and settings.
  * @property {shaka.extern.CmcdConfiguration} cmcd
@@ -2380,15 +2412,15 @@ shaka.extern.TextDisplayerConfiguration;
  *   The preferred role to use for text tracks.
  *   <br>
  *   Defaults to <code>''</code>.
- * @property {!Array.<string>} preferredVideoCodecs
+ * @property {!Array<string>} preferredVideoCodecs
  *   The list of preferred video codecs, in order of highest to lowest priority.
  *   <br>
  *   Defaults to <code>[]</code>.
- * @property {!Array.<string>} preferredAudioCodecs
+ * @property {!Array<string>} preferredAudioCodecs
  *   The list of preferred audio codecs, in order of highest to lowest priority.
  *   <br>
  *   Defaults to <code>[]</code>.
- * @property {!Array.<string>} preferredTextFormats
+ * @property {!Array<string>} preferredTextFormats
  *   The list of preferred text formats, in order of highest to lowest priority.
  *   <br>
  *   Defaults to <code>[]</code>.
@@ -2412,7 +2444,7 @@ shaka.extern.TextDisplayerConfiguration;
  *   If the content is predominantly monoscopic you should use 'CH-MONO'.
  *   <br>
  *   Defaults to <code>''</code>.
- * @property {!Array.<string>} preferredDecodingAttributes
+ * @property {!Array<string>} preferredDecodingAttributes
  *   The list of preferred attributes of decodingInfo, in the order of their
  *   priorities.
  *   <br>
@@ -2482,7 +2514,7 @@ shaka.extern.LanguageRole;
  *   positionY: number,
  *   startTime: number,
  *   duration: number,
- *   uris: !Array.<string>,
+ *   uris: !Array<string>,
  *   width: number,
  *   sprite: boolean
  * }}
@@ -2505,7 +2537,7 @@ shaka.extern.LanguageRole;
  *    The start time of the thumbnail in the presentation timeline, in seconds.
  * @property {number} duration
  *    The duration of the thumbnail, in seconds.
- * @property {!Array.<string>} uris
+ * @property {!Array<string>} uris
  *   An array of URIs to attempt.  They will be tried in the order they are
  *   given.
  * @property {number} width

@@ -140,7 +140,8 @@ shaka.ui.TextSelection = class extends shaka.ui.SettingsMenu {
         this.currentSelection,
         this.localization,
         this.controls.getConfig().textTrackLabelFormat,
-        this.controls.getConfig().showAudioChannelCountVariants);
+        this.controls.getConfig().showAudioChannelCountVariants,
+        this.controls.getConfig().showAudioCodec);
 
     // Add the Off button
     const offButton = shaka.util.Dom.createButton();
@@ -178,7 +179,7 @@ shaka.ui.TextSelection = class extends shaka.ui.SettingsMenu {
    */
   async onTextTrackSelected_(track) {
     // setTextTrackVisibility should be called after selectTextTrack.
-    // selectTextTrack sets a text stream, and setTextTrackVisiblity(true)
+    // selectTextTrack sets a text stream, and setTextTrackVisibility(true)
     // will set a text stream if it isn't already set. Consequently, reversing
     // the order of these calls makes two languages display simultaneously
     // if captions are turned off -> on in a different language.

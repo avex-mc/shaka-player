@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// cspell:ignore customdatascheme
+
 describe('MediaSourceEngine', () => {
   const ContentType = shaka.util.ManifestParserUtils.ContentType;
   const Uint8ArrayUtils = shaka.util.Uint8ArrayUtils;
@@ -382,7 +384,7 @@ describe('MediaSourceEngine', () => {
     expect(mediaSource.duration).toBeCloseTo(30);
   });
 
-  it('does not throw if endOfStrem called more than once', async () => {
+  it('does not throw if endOfStream called more than once', async () => {
     const initObject = new Map();
     initObject.set(ContentType.VIDEO, getFakeStream(metadata.video));
     await mediaSourceEngine.init(initObject, false);
@@ -395,9 +397,9 @@ describe('MediaSourceEngine', () => {
   });
 
   it('queues operations', async () => {
-    /** @type {!Array.<number>} */
+    /** @type {!Array<number>} */
     const resolutionOrder = [];
-    /** @type {!Array.<!Promise>} */
+    /** @type {!Array<!Promise>} */
     const requests = [];
 
     function checkOrder(p) {

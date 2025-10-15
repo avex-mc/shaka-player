@@ -53,7 +53,7 @@ shakaDemo.Main = class {
     /** @private {?shaka.ui.Controls} */
     this.controls_ = null;
 
-    /** @private {?Array.<shaka.extern.StoredContent>} */
+    /** @private {?Array<shaka.extern.StoredContent>} */
     this.initialStoredList_;
 
     /** @private {boolean} */
@@ -61,6 +61,9 @@ shakaDemo.Main = class {
 
     /** @private {boolean} */
     this.customContextMenu_ = false;
+
+    /** @private {string} */
+    this.watermarkText_ = '';
 
     /** @private {boolean} */
     this.nativeControlsEnabled_ = false;
@@ -101,7 +104,7 @@ shakaDemo.Main = class {
     window.addEventListener('error', (event) => {
       const errorEvent = /** @type {!ErrorEvent} */(event);
 
-      // Exception to the exceptions we catch: ChromeVox (screenreader) always
+      // Exception to the exceptions we catch: ChromeVox (screen reader) always
       // throws an error as of Chrome 73.  Screen these out since they are
       // unrelated to our application and we can't control them.
       if (errorEvent.message.includes('cvox.Api')) {
@@ -109,6 +112,16 @@ shakaDemo.Main = class {
       }
 
       this.onError_(/** @type {!shaka.util.Error} */ (errorEvent.error));
+    });
+
+    // Display unhandled rejections.
+    window.addEventListener('unhandledrejection', (event) => {
+      const rejectionEvent = /** @type {!PromiseRejectionEvent} */(event);
+      const message =
+          `Unhandled rejection in promise: ${rejectionEvent.reason}`;
+      console.error('unhandledrejection', rejectionEvent.reason,
+          rejectionEvent.promise);
+      this.handleError_(shaka.util.Error.Severity.CRITICAL, message, '');
     });
 
     // Set up event listeners.
@@ -267,7 +280,7 @@ shakaDemo.Main = class {
 
   /**
    * @param {string} url
-   * @return {!Promise.<string>}
+   * @return {!Promise<string>}
    * @private
    */
   async loadText_(url) {
@@ -387,6 +400,11 @@ shakaDemo.Main = class {
       uiConfig.overflowMenuButtons.push('visualizer');
     }
     ui.configure(uiConfig);
+    if (this.watermarkText_) {
+      ui.setTextWatermark(this.watermarkText_);
+    } else {
+      ui.removeWatermark();
+    }
   }
 
   /** @private */
@@ -414,8 +432,7 @@ shakaDemo.Main = class {
     // default values assigned to UI config elements as well as the decision
     // about what values to place in the URL hash.
     this.player_.configure(
-        'manifest.dash.clockSyncUri',
-        'https://shaka-player-demo.appspot.com/time.txt');
+        'manifest.dash.clockSyncUri', 'https://time.akamai.com/?ms&iso');
 
     // Get default config.
     this.defaultConfig_ = this.player_.getConfiguration();
@@ -587,7 +604,7 @@ shakaDemo.Main = class {
         this.dispatchEventWithName_('shaka-main-offline-progress');
         const start = Date.now();
         const stored = await storage.store(asset.manifestUri, metadata,
-            /* mimeType= */ null, asset.extraThumbnail,
+            asset.mimeType || null, asset.extraThumbnail,
             asset.extraText).promise;
         const end = Date.now();
         console.log('Download time:', end - start);
@@ -704,6 +721,13 @@ shakaDemo.Main = class {
       if (needOffline) {
         const hasSupportedOfflineDRM = asset.drm.some((drm) => {
           const identifier = shakaAssets.identifierForKeySystem(drm);
+          // Special case when using clear keys.
+          if (identifier == 'org.w3.clearkey') {
+            const licenseServers = asset.getLicenseServers();
+            if (!licenseServers.has(identifier)) {
+              return this.support_.drm[identifier];
+            }
+          }
           return this.support_.drm[identifier] &&
                  this.support_.drm[identifier].persistentState;
         });
@@ -747,6 +771,9 @@ shakaDemo.Main = class {
     }
     if (asset.features.includes(shakaAssets.Feature.DOLBY_VISION_3D)) {
       mimeTypes.push('video/mp4; codecs="dvh1.20.01"');
+    }
+    if (asset.features.includes(shakaAssets.Feature.AV1)) {
+      mimeTypes.push('video/mp4; codecs="av01.0.01M.08"');
     }
     let hasSupportedMimeType = mimeTypes.some((type) => {
       return this.support_.media[type];
@@ -808,6 +835,27 @@ shakaDemo.Main = class {
    */
   getCustomContextMenuEnabled() {
     return this.customContextMenu_;
+  }
+
+  /**
+   * Set the text for watermark.
+   *
+   * @param {string} text
+   */
+  setWatermarkText(text) {
+    this.watermarkText_ = text;
+    // Configure the UI, to add or remove the controls.
+    this.configureUI_();
+    this.remakeHash();
+  }
+
+  /**
+   * Get the current text for watermark.
+   *
+   * @return {string}
+   */
+  getWatermarkText() {
+    return this.watermarkText_;
   }
 
   /**
@@ -940,11 +988,17 @@ shakaDemo.Main = class {
             advanced[drmSystem] = shakaDemo.Main.defaultAdvancedDrmConfig();
           }
           if ('videoRobustness' in params) {
-            advanced[drmSystem].videoRobustness = params['videoRobustness'];
+            advanced[drmSystem].videoRobustness =
+                params['videoRobustness'].split(',');
           }
           if ('audioRobustness' in params) {
-            advanced[drmSystem].audioRobustness = params['audioRobustness'];
+            advanced[drmSystem].audioRobustness =
+                params['audioRobustness'].split(',');
           }
+        }
+
+        if ('audioRobustness' in params || 'videoRobustness' in params) {
+          this.configure('drm.advanced', advanced);
         }
       }
     }
@@ -993,6 +1047,10 @@ shakaDemo.Main = class {
     if ('customContextMenu' in params) {
       this.customContextMenu_ = true;
       this.configureUI_();
+    }
+
+    if ('watermarkText' in params) {
+      this.watermarkText_ = params['watermarkText'];
     }
 
     if ('visualizer' in params) {
@@ -1059,7 +1117,7 @@ shakaDemo.Main = class {
   }
 
   /**
-   * @return {!Object.<string, string>} params
+   * @return {!Object<string, string>} params
    * @private
    */
   getParams_() {
@@ -1071,8 +1129,8 @@ shakaDemo.Main = class {
 
     // Because they are being concatenated in this order, if both an
     // URL fragment and an URL parameter of the same type are present
-    // the URL fragment takes precendence.
-    /** @type {!Array.<string>} */
+    // the URL fragment takes precedence.
+    /** @type {!Array<string>} */
     const combined = fields.concat(fragments);
     const params = {};
     for (const line of combined) {
@@ -1094,15 +1152,19 @@ shakaDemo.Main = class {
   getValueFromGivenConfig_(valueName, configObject) {
     let objOn = configObject;
     let valueNameOn = valueName;
-    while (valueNameOn) {
-      // Split using a regex that only matches the first period.
-      const split = valueNameOn.split(/\.(.+)/);
-      if (split.length == 3) {
-        valueNameOn = split[1];
-        objOn = objOn[split[0]];
-      } else {
-        return objOn[split[0]];
+    try {
+      while (valueNameOn) {
+        // Split using a regex that only matches the first period.
+        const split = valueNameOn.split(/\.(.+)/);
+        if (split.length == 3) {
+          valueNameOn = split[1];
+          objOn = objOn[split[0]];
+        } else {
+          return objOn[split[0]];
+        }
       }
+    } catch (e) {
+      // Ignore errors
     }
     return undefined;
   }
@@ -1148,7 +1210,7 @@ shakaDemo.Main = class {
   /**
    * @param {string} uri
    * @param {!shaka.net.NetworkingEngine} netEngine
-   * @return {!Promise.<!ArrayBuffer>}
+   * @return {!Promise<!ArrayBuffer>}
    * @private
    */
   async requestCertificate_(uri, netEngine) {
@@ -1231,10 +1293,11 @@ shakaDemo.Main = class {
     goog.asserts.assert(netEngine, 'There should be a net engine.');
     asset.applyFilters(netEngine);
 
-    const assetConfig = asset.getConfiguration();
     if (storage) {
+      const assetConfig = asset.getConfiguration(/* forStorage= */ true);
       storage.configure(assetConfig);
     } else {
+      const assetConfig = asset.getConfiguration();
       // Remove all not-player-applied configurations, by resetting the
       // configuration then re-applying the desired configuration.
       this.player_.resetConfiguration();
@@ -1303,7 +1366,7 @@ shakaDemo.Main = class {
 
   /**
    * @param {ShakaDemoAssetInfo} asset
-   * @return {!Promise.<string>}
+   * @return {!Promise<string>}
    * @private
    */
   async getManifestUri_(asset) {
@@ -1370,10 +1433,15 @@ shakaDemo.Main = class {
         await this.player_.load(preloadManager);
       } else {
         const manifestUri = await this.getManifestUri_(asset);
+        let mimeType = undefined;
+        if (asset.mimeType &&
+            manifestUri && !manifestUri.startsWith('offline:')) {
+          mimeType = asset.mimeType;
+        }
         await this.player_.load(
             manifestUri,
             /* startTime= */ null,
-            asset.mimeType || undefined);
+            mimeType);
       }
 
       if (this.player_.isAudioOnly() &&
@@ -1415,7 +1483,7 @@ shakaDemo.Main = class {
           goog.asserts.assert(this.video_ != null, 'this.video should exist!');
           adManager.initClientSide(
               this.controls_.getClientSideAdContainer(), this.video_,
-              /** adsRenderingSettings= **/ null);
+              /** adsRenderingSettings= */ null);
           const adRequest = new google.ima.AdsRequest();
           adRequest.adTagUrl = asset.adTagUri;
           adManager.requestClientSideAds(adRequest);
@@ -1490,11 +1558,15 @@ shakaDemo.Main = class {
         for (const drmSystem of shakaDemo.Main.commonDrmSystems) {
           const advancedFor = advanced[drmSystem];
           if (advancedFor) {
-            if (advancedFor.videoRobustness) {
-              params.push('videoRobustness=' + advancedFor.videoRobustness);
+            if (advancedFor.videoRobustness &&
+              advancedFor.videoRobustness.length) {
+              params.push('videoRobustness=' +
+                  advancedFor.videoRobustness.join());
             }
-            if (advancedFor.audioRobustness) {
-              params.push('audioRobustness=' + advancedFor.audioRobustness);
+            if (advancedFor.audioRobustness &&
+              advancedFor.audioRobustness.length) {
+              params.push('audioRobustness=' +
+                  advancedFor.audioRobustness.join());
             }
             break;
           }
@@ -1513,7 +1585,7 @@ shakaDemo.Main = class {
     ];
 
     for (const key of preferredArray) {
-      const array = /** @type {!Array.<string>} */(
+      const array = /** @type {!Array<string>} */(
         this.getCurrentConfigValue(key));
       if (array.length) {
         params.push(key + '=' + array.join(','));
@@ -1560,6 +1632,10 @@ shakaDemo.Main = class {
 
     if (this.customContextMenu_) {
       params.push('customContextMenu');
+    }
+
+    if (this.watermarkText_) {
+      params.push('watermarkText=' + this.watermarkText_);
     }
 
     if (this.getIsVisualizerActive()) {
@@ -1633,7 +1709,7 @@ shakaDemo.Main = class {
 
   /**
    * @param {ShakaDemoAssetInfo} asset
-   * @return {!Promise.<string>}
+   * @return {!Promise<string>}
    * @private
    */
   async getManifestUriFromAdManager_(asset) {
@@ -1686,7 +1762,7 @@ shakaDemo.Main = class {
 
   /**
    * @param {ShakaDemoAssetInfo} asset
-   * @return {!Promise.<string>}
+   * @return {!Promise<string>}
    * @private
    */
   async getManifestUriFromMediaTailorAdManager_(asset) {
@@ -1924,8 +2000,8 @@ shakaDemo.Main = class {
     return {
       distinctiveIdentifierRequired: false,
       persistentStateRequired: false,
-      videoRobustness: '',
-      audioRobustness: '',
+      videoRobustness: [],
+      audioRobustness: [],
       sessionType: '',
       serverCertificate: new Uint8Array(0),
       serverCertificateUri: '',
@@ -1936,7 +2012,7 @@ shakaDemo.Main = class {
 };
 
 
-/** @type {!Array.<string>} */
+/** @type {!Array<string>} */
 shakaDemo.Main.commonDrmSystems = [
   'com.widevine.alpha',
   'com.microsoft.playready',
@@ -1999,3 +2075,4 @@ document.addEventListener('shaka-ui-load-failed', (event) => {
     shakaDemoMain.initFailed(reasonCode);
   });
 });
+

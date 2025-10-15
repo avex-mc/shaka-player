@@ -17,7 +17,7 @@ let TimeRange;
 
 /**
  * @typedef {{
- *   buffered: !Array.<TimeRange>,
+ *   buffered: !Array<TimeRange>,
  *   start: number,
  *   waitingAt: number,
  *   expectedEndTime: number,
@@ -31,7 +31,7 @@ let TimeRange;
  * detects a stall through the StallDetector, and a 'gapjumped' event when the
  * Playhead jumps over a gap in the buffered range(s).
  *
- * @property {!Array.<TimeRange>} buffered
+ * @property {!Array<TimeRange>} buffered
  *   The buffered ranges for the test.
  * @property {number} start
  *   The time to start playing at.
@@ -48,8 +48,8 @@ let PlayingTestInfo;
 
 /**
  * @typedef {{
- *   buffered: !Array.<TimeRange>,
- *   newBuffered: (!Array.<TimeRange>|undefined),
+ *   buffered: !Array<TimeRange>,
+ *   newBuffered: (!Array<TimeRange>|undefined),
  *   start: number,
  *   seekTo: number,
  *   expectedEndTime: number,
@@ -61,9 +61,9 @@ let PlayingTestInfo;
  * to a given time, which may have different buffered ranges.  If we are in a
  * gap, Playhead should jump the gap to the expected time.
  *
- * @property {!Array.<TimeRange>} buffered
+ * @property {!Array<TimeRange>} buffered
  *   The buffered ranges for the test.
- * @property {(!Array.<TimeRange>|undefined)} newBuffered
+ * @property {(!Array<TimeRange>|undefined)} newBuffered
  *   Used in the unbuffered seek tests.  Represents the buffered ranges to
  *   use after the seek.
  * @property {number} start
@@ -131,7 +131,6 @@ describe('Playhead', () => {
       textStreams: [],
       imageStreams: [],
       presentationTimeline: timeline,
-      minBufferTime: 10,
       offlineSessionIds: [],
       sequenceMode: false,
       ignoreManifestTimestampsInSegmentsMode: false,
@@ -404,6 +403,8 @@ describe('Playhead', () => {
     timeline.getDuration.and.returnValue(Infinity);
     timeline.getSeekRangeStart.and.returnValue(5);
     timeline.getSeekRangeEnd.and.returnValue(60);
+
+    config.rebufferingGoal = 10;
 
     playhead = new shaka.media.MediaSourcePlayhead(
         video,
@@ -1389,7 +1390,7 @@ describe('Playhead', () => {
     }
 
     /**
-     * @param {!Array.<{start: number, end: number}>} buffers
+     * @param {!Array<{start: number, end: number}>} buffers
      * @param {number} time
      * @return {number}
      */
