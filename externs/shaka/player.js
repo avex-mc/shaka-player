@@ -286,7 +286,8 @@ shaka.extern.BufferedInfo;
  *   originalAudioId: ?string,
  *   originalTextId: ?string,
  *   originalImageId: ?string,
- *   originalLanguage: ?string
+ *   originalLanguage: ?string,
+ *   displayName: ?string
  * }}
  *
  * @description
