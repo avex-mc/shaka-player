@@ -79,40 +79,56 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
 
 
     this.eventManager.listen(this.player, 'loading', () => {
+      // eslint-disable-next-line no-console
+      console.log('loading event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
     this.eventManager.listen(this.player, 'loaded', () => {
+      // eslint-disable-next-line no-console
+      console.log('loaded event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
     this.eventManager.listen(this.player, 'unloading', () => {
+      // eslint-disable-next-line no-console
+      console.log('unloading event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
     this.eventManager.listen(this.player, 'variantchanged', () => {
+      // eslint-disable-next-line no-console
+      console.log('variantchanged event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
     this.eventManager.listen(this.player, 'trackschanged', () => {
+      // eslint-disable-next-line no-console
+      console.log('trackschanged event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
     this.eventManager.listen(this.player, 'abrstatuschanged', () => {
+      // eslint-disable-next-line no-console
+      console.log('abrstatuschanged event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
     this.eventManager.listen(this.player, 'adaptation', () => {
+      // eslint-disable-next-line no-console
+      console.log('adaptation event fired');
       this.updateSelection_();
       this.updateLabels_();
     });
 
+    // eslint-disable-next-line no-console
+    console.log('ResolutionSelection constructor: calling updateSelection_()');
     this.updateSelection_();
   }
 
@@ -374,17 +390,18 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
     /** @type {!Array<shaka.extern.VideoTrack>} */
     let tracks = this.player.getVideoTracks() || [];
 
-    const selectedTrack = tracks.find((track) => track.active);
-
-    // Debug: Log all tracks before filtering
     // eslint-disable-next-line no-console
-    console.log('All video tracks before filtering:', tracks.map((t) => ({
+    console.log('getVideoTracks() returned:', tracks.length, 'tracks');
+    // eslint-disable-next-line no-console
+    console.log(tracks.map((t) => ({
+      id: t.id,
       displayName: t.displayName,
       height: t.height,
       bandwidth: t.bandwidth,
-      frameRate: t.frameRate,
       active: t.active,
     })));
+
+    const selectedTrack = tracks.find((track) => track.active);
 
     tracks = tracks.filter((track, idx) => {
       // Keep the first one with the same height and framerate or bandwidth.
@@ -405,16 +422,6 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
       });
       return otherIdx == idx;
     });
-
-    // Debug: Log filtered tracks
-    // eslint-disable-next-line no-console
-    console.log('Video tracks after filtering:', tracks.map((t) => ({
-      displayName: t.displayName,
-      height: t.height,
-      bandwidth: t.bandwidth,
-      frameRate: t.frameRate,
-      active: t.active,
-    })));
 
     // Sort the tracks by height or bandwidth depending on content type.
     tracks.sort((t1, t2) => {
@@ -607,6 +614,12 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
    * @private
    */
   onVideoTrackSelected_(track) {
+    // eslint-disable-next-line no-console
+    console.log('onVideoTrackSelected_ called with:', {
+      displayName: track.displayName,
+      height: track.height,
+      id: track.id,
+    });
     // Disable abr manager before changing tracks.
     const config = {abr: {enabled: false}};
     this.player.configure(config);
