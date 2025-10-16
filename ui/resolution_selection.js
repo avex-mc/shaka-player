@@ -394,7 +394,6 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
     console.log('getVideoTracks() returned:', tracks.length, 'tracks');
     // eslint-disable-next-line no-console
     console.log(tracks.map((t) => ({
-      id: t.id,
       displayName: t.displayName,
       height: t.height,
       bandwidth: t.bandwidth,
@@ -618,7 +617,7 @@ shaka.ui.ResolutionSelection = class extends shaka.ui.SettingsMenu {
     console.log('onVideoTrackSelected_ called with:', {
       displayName: track.displayName,
       height: track.height,
-      id: track.id,
+      bandwidth: track.bandwidth,
     });
     // Disable abr manager before changing tracks.
     const config = {abr: {enabled: false}};
