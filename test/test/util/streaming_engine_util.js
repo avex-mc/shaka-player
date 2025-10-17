@@ -356,6 +356,7 @@ shaka.test.StreamingEngineUtil = class {
       disabledUntilTime: 0,
       primary: false,
       decodingInfos: [],
+      displayName: null,
     };
     let variant2;
 
@@ -368,8 +369,10 @@ shaka.test.StreamingEngineUtil = class {
         bandwidth: 0,
         id: 10,
         language: 'und',
+        disabledUntilTime: 0,
         primary: false,
         decodingInfos: [],
+        displayName: null,
       };
     }
 
